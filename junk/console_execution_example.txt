@@ -1,0 +1,34 @@
+var sys = new LSystem();
+sys.setAxiom("X");
+sys.addRule("X", "F-[[X]+X]+F[+FX]-X").addRule("F", "FF");
+sys.construct(3);
+sys.addSymbol("F", function() {
+  // console.log("F from ITR", this.itr);
+  // console.log("Value from User Scope", this.scope.myVal);
+  this.turtle.position[0]++;
+  console.log("Updating Turtle Pos: ", this.turtle.position[0]);
+});
+
+sys.addSymbol("X", function() {
+  this.turtle.position[0] += 10;
+  console.log("Updating Turtle Pos: ", this.turtle.position[0]);
+});
+
+sys.addSymbol("-", function() {
+  
+});
+
+sys.addSymbol("[", function() {
+  this.opSaveState();
+});
+
+sys.addSymbol("]", function() {
+  this.opRestoreState();
+});
+
+
+window.myScope = {
+  myVal: 5
+};
+
+sys.process(window.myScope);
