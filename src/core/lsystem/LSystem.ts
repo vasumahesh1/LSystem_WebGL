@@ -88,6 +88,7 @@ class LSystemExecutionScope {
   noiseGen: any;
   itr: number;
   depth: number;
+  maxDepth: number;
   rootString: string;
   stack: Stack<LSystemStackEntry>;
   turtle: LSystemTurtle;
@@ -179,6 +180,7 @@ class LSystem {
   construction: string;
   execScope: LSystemExecutionScope;
   seed: number;
+  maxDepth: number;
   noiseGen: any;
 
   constructor(seed: number) {
@@ -186,6 +188,16 @@ class LSystem {
 
     let noise = new Noise(seed);
     this.noiseGen = noise;
+
+    this.addSymbol("[", function() {
+      this.opSaveState();
+      this.depth++;
+    }, []);
+
+    this.addSymbol("]", function() {
+      this.opRestoreState();
+      this.depth--;
+    }, []);
   }
 
   setAxiom(value: string) {
@@ -246,6 +258,7 @@ class LSystem {
 
   construct(iterations: number) {
     let current = this.axiom;
+
     for (let itr = iterations - 1; itr >= 0; --itr) {
 
       let nextString = "";
@@ -267,7 +280,26 @@ class LSystem {
       current = nextString;
     }
 
+    this.maxDepth = 0;
+
+    let possibleDepth = 0;
+    let currentDepth = 0;
+    for (let i = 0; i < current.length; ++i) {
+      if (current[i] == "[") {
+        currentDepth++;
+      }
+      else if (current[i] == "]") {
+        if (possibleDepth < currentDepth) {
+          possibleDepth = currentDepth;
+          currentDepth = 0;
+        }
+      }
+    }
+
+    this.maxDepth = possibleDepth;
+
     dConstruct("Resultant String: " + current);
+    dConstruct("Resultant Max Depth: ", this.maxDepth);
 
     this.construction = current;
     return this;
@@ -280,6 +312,7 @@ class LSystem {
     this.execScope.scope = scope;
     this.execScope.rootString = rootString;
     this.execScope.noiseGen = this.noiseGen;
+    this.execScope.maxDepth = this.maxDepth;
 
     for (this.execScope.itr = 0; this.execScope.itr < rootString.length; ++this.execScope.itr) {
       let symbol = rootString[this.execScope.itr];

@@ -30,6 +30,7 @@ let controls = {
   loadPlanetSceneButton: loadPlanetScene,
   loadRedPlanetSceneButton: loadRedPlanetScene,
   toggleCollisionButton: toggleCollision,
+  toggleLeavesButton: toggleLeaves,
   saveImage: saveImage,
   geometryColor: [255, 0, 0],
 
@@ -37,6 +38,15 @@ let controls = {
     opacity: 0.65
   }
 };
+
+const LEAF_COLOR_GRADIENT: Array<vec4> = [
+  vec4.fromValues(231, 222, 81, 255),
+  vec4.fromValues(157, 206, 52, 255),
+  vec4.fromValues(136, 181, 71, 255),
+  vec4.fromValues(119, 154, 26, 255),
+  // vec4.fromValues(189, 153, 43, 255),
+  // vec4.fromValues(153, 72, 9, 255)
+];
 
 let prevTime: number;
 let degreePerMS: number = -5.0 / 1000.0;
@@ -47,6 +57,7 @@ let cube: Cube;
 let boundingLines: Line;
 let branchInstanced: MeshInstanced;
 let leaf1Instanced: MeshInstanced;
+let leafInstances: Array<MeshInstanced>;
 let sky: Sky;
 let plane: NoisePlane;
 
@@ -59,7 +70,7 @@ let branchShader: ShaderProgram;
 let leafShader: ShaderProgram;
 let terrainShader: ShaderProgram;
 let skyShader: ShaderProgram;
-let waterShader: ShaderProgram;
+let visualShader: ShaderProgram;
 
 
 let leafShaderList: Array<ShaderProgram>;
@@ -71,6 +82,7 @@ let frameCount: number = 0;
 let shouldCapture: boolean = false;
 
 let drawOnlyCollisions: boolean = false;
+let drawLeaves: boolean = true;
 
 let grassTexture: Texture;
 let grassDarkTexture: Texture;
@@ -119,6 +131,10 @@ function loadTestScene() {
   frameCount = 0;
 }
 
+function toggleLeaves() {
+  drawLeaves = !drawLeaves;
+}
+
 /**
  * @brief      Loads the geometry assets
  */
@@ -143,16 +159,40 @@ function loadAssets() {
 
   branchInstanced = new MeshInstanced();
   leaf1Instanced = new MeshInstanced();
+  leafInstances = new Array<MeshInstanced>();
+
+  let leafLoadPromises: Array<any> = [];
+
+  for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
+    let inst = new MeshInstanced();
+    let color = LEAF_COLOR_GRADIENT[i];
+    vec4.scale(color, color, 1 / 255);
+    inst.setColor(color);
+    leafInstances.push(inst);
+
+    leafLoadPromises.push(inst.load('./src/objs/leaf4.obj'));
+  }
+
+  branchInstanced.setColor(vec4.fromValues(0,0,0,1));
+  leaf1Instanced.setColor(vec4.fromValues(0,0,0,1));
 
   branchInstanced.load('./src/objs/branch1.obj')
     .then(function() {
       return leaf1Instanced.load('./src/objs/leaf4.obj');
     })
     .then(function() {
+      return Promise.all(leafLoadPromises);
+    })
+    .then(function() {
       customLSystem.addInstance("leaf1", leaf1Instanced);
       customLSystem.addInstance("branch", branchInstanced);
       customLSystem.addScope("boundingLines", boundingLines);
+      customLSystem.addScope("leafInstances", leafInstances);
       customLSystem.construct(4);
+
+      for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
+        leafInstances[i].create();
+      }
 
       boundingLines.create();
       branchInstanced.create();
@@ -193,6 +233,7 @@ function constructGUI() {
   gui.add(controls, 'loadRedPlanetSceneButton').name('Load Red Planet Scene');
   gui.add(controls, 'saveImage').name('Save Image');
   gui.add(controls, 'toggleCollisionButton').name('Toggle Collision');
+  gui.add(controls, 'toggleLeavesButton').name('Toggle Leaves');
 
   let group = gui.addFolder('Water Controls');
   group.add(shaderControls.waterControls, 'opacity', 0, 1).step(0.05).name('Water Opacity').listen();
@@ -267,6 +308,11 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/sky-frag.glsl')),
   ]);
 
+  visualShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/visual-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/visual-frag.glsl')),
+  ]);
+
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -318,15 +364,20 @@ function main() {
         renderer.render(camera, activeShader, [branchInstanced]);
       }
 
-      leafShader.setTime(frameCount);
-      leafShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
+      if (drawLeaves) {
+        leafShader.setTime(frameCount);
+        leafShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
 
-      chunks = leaf1Instanced.getNumChunks();
-      for (let ctr = 0; ctr < chunks; ++ctr) {
-        leafShader.setInstanceModelMatrices(leaf1Instanced.getChunkedInstanceModelMatrices(ctr));
-        renderer.render(camera, leafShader, [leaf1Instanced]);
+        for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
+          let instance = leafInstances[i];
+
+          chunks = instance.getNumChunks();
+          for (let ctr = 0; ctr < chunks; ++ctr) {
+            leafShader.setInstanceModelMatrices(instance.getChunkedInstanceModelMatrices(ctr));
+            renderer.render(camera, leafShader, [instance]);
+          }
+        }
       }
-      
     }
     
     // for (let ctr = 0; ctr < branchShaderList.length; ++ctr) {
@@ -345,7 +396,8 @@ function main() {
     // renderer.render(camera, leafShader, [leaf1Instanced]);
 
     if (drawOnlyCollisions) {
-      renderer.render(camera, terrainShader, [boundingLines]);
+      visualShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
+      renderer.render(camera, visualShader, [boundingLines]);
     }
 
     frameCount++;

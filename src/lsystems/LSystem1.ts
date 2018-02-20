@@ -163,6 +163,10 @@ function drawBranchLarge() {
   vec4.transformMat4(worldHead, localHead, this.turtle.transform);
   vec4.transformMat4(worldOrigin, vec4.fromValues(0.0, 0.0, 0.0, 1), this.turtle.transform);
 
+  if (worldOrigin[1] < 0) {
+    return;
+  }
+
   let instModel = mat4.create();
   let branchScale = mat4.create();
   let branchOffset = mat4.create();
@@ -242,70 +246,6 @@ function drawBranchLarge() {
   this.turtle.applyTransform(transform);
 }
 
-function drawLeaf1() {
-  let transform = mat4.create();
-  let meshInstance = this.scope.instanceMap["leaf1"];
-
-  systemTrace("Making leaf");
-
-  let currentUp = this.turtle.heading; // vec4.create();
-  // vec4.transformMat4(currentUp, vec4.fromValues(1, 0, 0, 0), this.turtle.transform);
-
-  let instModel = mat4.create();
-  let offset = mat4.create();
-  let meshScale = mat4.create();
-
-  let currentUpVec3 = vec3.fromValues(0.5, 0, 0);
-
-  // vec3.scale(currentUpVec3, currentUpVec3, 10.0);
-
-  mat4.fromTranslation(offset, currentUpVec3);
-  mat4.fromScaling(meshScale, vec3.fromValues(0.25,0.25,0.25));
-  mat4.multiply(instModel, this.turtle.transform, offset);
-  mat4.multiply(instModel, this.turtle.transform, meshScale);
-
-  meshInstance.addInstanceUsingTransform(instModel);
-}
-
-function drawBranchLeaf1() {
-  if (this.depth < 3) {
-    return;
-  }
-
-  let noise = this.noiseGen.perlin3(this.turtle.position[0], this.turtle.position[1], this.turtle.position[2]);
-
-  let angleDetla = 2.0 * Math.PI * noise;
-
-  let transform = mat4.create();
-  let transformX = mat4.create();
-  let transformY = mat4.create();
-  let transformZ = mat4.create();
-  let meshInstance = this.scope.instanceMap["leaf1"];
-
-
-  let instModel = mat4.create();
-  let offset = mat4.create();
-  let meshScale = mat4.create();
-
-  mat4.fromYRotation(transform, angleDetla);
-  mat4.fromZRotation(transformZ, degreeToRad(45));
-  mat4.fromScaling(meshScale, vec3.fromValues(0.25,0.25,0.25));
-
-  mat4.multiply(transform, transform, transformZ);
-  mat4.multiply(transform, transform, meshScale);
-  mat4.multiply(instModel, this.turtle.transform, transform);
-
-  let localOrigin = vec4.fromValues(0.0, 0.0, 0.0, 1);
-  let worldOrigin = vec4.create();
-  vec4.transformMat4(worldOrigin, vec4.fromValues(0.0, 0.0, 0.0, 1), instModel);
-
-  if (worldOrigin[1] < 1.0) {
-    return;
-  }
-
-  meshInstance.addInstanceUsingTransform(instModel);
-}
-
 function drawBranchLeaf2() {
   if (this.depth < 3) {
     return;
@@ -314,15 +254,15 @@ function drawBranchLeaf2() {
   let transform = mat4.create();
   let transformX = mat4.create();
   let transformZ = mat4.create();
-  let meshInstance = this.scope.instanceMap["leaf1"];
-
 
   let instModel = mat4.create();
   let offset = mat4.create();
   let meshScale = mat4.create();
 
-  mat4.fromZRotation(transformZ, degreeToRad(45));
-  mat4.fromScaling(meshScale, vec3.fromValues(0.25,0.25,0.25));
+  let baseScale = 0.35;
+
+  mat4.fromZRotation(transformZ, degreeToRad(33));
+  mat4.fromScaling(meshScale, vec3.fromValues(baseScale, baseScale, baseScale));
 
   mat4.multiply(transform, transform, transformZ);
   mat4.multiply(transform, transform, meshScale);
@@ -334,6 +274,55 @@ function drawBranchLeaf2() {
 
   if (worldOrigin[1] < 1.0) {
     return;
+  }
+
+  let val = worldOrigin[1] / 5.0;
+  if (val > 1.0) {
+    val = 1.0;
+  }
+
+  let leafInstances = this.scope.leafInstances;
+
+  let noise = this.noiseGen.perlin3(this.turtle.position[0] * 23, this.turtle.position[1] * 23, this.turtle.position[2] * 23);
+
+  let idx = Math.floor((leafInstances.length - 1) * (noise + 1.0) / 2.0);
+  let meshInstance = leafInstances[idx];
+
+  let itr = this.itr;
+  let str = this.rootString;
+  let len = str.length;
+
+  let depth = this.depth;
+  let hasLeaf = false;
+  let useLast = false;
+
+  let lastDepth = this.depth;
+
+  for (var i = itr + 1; i < len; ++i) {
+    if (str[i] == "[") {
+      depth++;
+      hasLeaf = false;
+    }
+    else if (str[i] == "l") {
+      if (depth > lastDepth) {
+        lastDepth = depth;
+        break;
+      }
+
+    }
+    else if (str[i] == "]") {
+      depth--;
+    }
+
+    if (depth <= 0) {
+      break;
+    }
+  }
+
+  useLast = lastDepth <= this.depth;
+
+  if (useLast) {
+    meshInstance = leafInstances[leafInstances.length - 1];
   }
 
   meshInstance.addInstanceUsingTransform(instModel);
@@ -435,7 +424,7 @@ class LSystem1 {
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "BS", 0.2);
-    this.system.addWeightedRule("B", "SD[l+l+l]SD", 0.2);
+    this.system.addWeightedRule("B", "SD[l+++l+++l]SD", 0.2);
     // this.system.addWeightedRule("B", "DD", 0.8);
     // this.system.addWeightedRule("F", "--FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.8);
     // this.system.addWeightedRule("F", "++FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.4);
@@ -444,7 +433,6 @@ class LSystem1 {
     // this.system.addRule("F", "FF");
 
 
-    this.system.addSymbol("1", drawLeaf1, []);
     this.system.addSymbol("l", drawBranchLeaf2, []);
     this.system.addSymbol("b", drawBranchLeaf2, []);
     this.system.addSymbol("D", drawBranchLarge, []);
@@ -453,16 +441,6 @@ class LSystem1 {
     this.system.addSymbol("+", rotateTurtleCW, []);
     this.system.addSymbol("/", rotateTiltCW, []);
     this.system.addSymbol("*", rotateTiltCCW, []);
-
-    this.system.addSymbol("[", function() {
-      this.opSaveState();
-      this.depth++;
-    }, []);
-
-    this.system.addSymbol("]", function() {
-      this.opRestoreState();
-      this.depth--;
-    }, []);
 
     let sunlightDir = vec3.create();
     vec3.normalize(sunlightDir, vec3.fromValues(20, 20, 20));

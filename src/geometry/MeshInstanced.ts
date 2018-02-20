@@ -41,10 +41,11 @@ class MeshInstanced extends Drawable {
   indices: Uint32Array;
   vertices: Float32Array;
   normals: Float32Array;
+  colors: Float32Array;
   positions: Float32Array;
 
   models: Array<mat4>;
-
+  baseColor: vec4;
   rawMesh: any;
 
   constructor() {
@@ -54,6 +55,7 @@ class MeshInstanced extends Drawable {
     this.positions = new Float32Array([]);
     this.normals = new Float32Array([]);
     this.vertices = new Float32Array([]);
+    this.colors = new Float32Array([]);
     this.indices = new Uint32Array([]);
     this.models = new Array<mat4>();
   }
@@ -67,6 +69,10 @@ class MeshInstanced extends Drawable {
         resolve();
       });
     });
+  }
+
+  setColor(color: vec4) {
+    this.baseColor = color;
   }
 
   getInstanceModelMatrices() {
@@ -125,6 +131,7 @@ class MeshInstanced extends Drawable {
 
   create() {
     this.vertices = new Float32Array([]);
+    this.colors = new Float32Array([]);
     this.indices = new Uint32Array([]);
     this.normals = new Float32Array([]);
 
@@ -137,6 +144,13 @@ class MeshInstanced extends Drawable {
     dCreateInfo("Loading Vertices: " + vertexCount);
     dCreateInfo("Loading Indices: " + indices.length);
     dCreate("Loading Positions: " + this.positions.length);
+
+    let colorArr =  new Float32Array([
+      this.baseColor[0],
+      this.baseColor[1],
+      this.baseColor[2],
+      1.0
+    ]);
 
     for (var itr = 0; itr < vertexCount; itr+= 3) {
       let arr =  new Float32Array([
@@ -155,6 +169,7 @@ class MeshInstanced extends Drawable {
 
       this.vertices = concatFloat32Array(this.vertices, arr);
       this.normals = concatFloat32Array(this.normals, arrN);
+      this.colors = concatFloat32Array(this.colors, colorArr);
     }
 
     this.indices = new Uint32Array(indices);
@@ -162,6 +177,7 @@ class MeshInstanced extends Drawable {
     this.generateIdx();
     this.generateVert();
     this.generateNor();
+    this.generateColor();
     this.generateInstancePos();
 
     this.count = this.indices.length;
@@ -178,6 +194,9 @@ class MeshInstanced extends Drawable {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVert);
     gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufCol);
+    gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
       
     dCreateInfo(`Created MeshInstanced with ${this.instances} Instances`);
   }

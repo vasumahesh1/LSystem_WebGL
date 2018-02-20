@@ -24,37 +24,19 @@ uniform float u_ControlsNoiseScale;
 in vec4 vs_Pos;
 in vec4 vs_Nor;
 in vec4 vs_Col;
-in vec4 vs_InstPos;
 
 /*----------  Shader Outputs  ----------*/
-out vec4 fs_Nor;
-out vec4 fs_LightVec;
 out vec4 fs_Col;
-out vec4 fs_Pos;
-out vec4 fs_SphereNor;
-out float fs_Spec;
-out float fs_Valid;
-out float fs_useMatcap;
 
 
 
 void main() {
   vec4 vertexColor;
-  vec4 lightPos = vec4(0, 15, 0, 1);
   vec4 vertexPosition = vs_Pos;
-  vec4 vertexNormal = vs_Nor;
-  mat4 instanceModel = u_InstanceModel[gl_InstanceID];
 
-  fs_Col = vs_Col;
+  fs_Col = vec4(1, 1, 1, 1);
 
-  mat3 invTranspose = inverse(mat3(instanceModel));
-  fs_Nor = vec4(invTranspose * vec3(vertexNormal), 0);
-
-  vec4 modelposition = instanceModel * u_Model * vertexPosition;
-
-  fs_Pos = modelposition;
-
-  fs_LightVec = lightPos - modelposition;
+  vec4 modelposition = u_Model * vertexPosition;
 
   gl_Position = u_ViewProj * modelposition;
 }

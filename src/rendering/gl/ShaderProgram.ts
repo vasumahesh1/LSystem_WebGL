@@ -365,6 +365,15 @@ class ShaderProgram {
       }
     }
 
+    if (this.attrCol != -1 && d.bindCol()) {
+      gl.enableVertexAttribArray(this.attrCol);
+      gl.vertexAttribPointer(this.attrCol, 4, gl.FLOAT, false, 0, 0);
+
+      if (d.isInstanced()) {
+        gl.vertexAttribDivisor(this.attrCol, 0);
+      }
+    }
+
     d.bindIdx();
 
     if (d.isInstanced()) {

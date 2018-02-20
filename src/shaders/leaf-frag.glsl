@@ -25,7 +25,7 @@ void main() {
   // Material base color (before shading)
   vec4 diffuseColor = fs_Col;
   float alpha = diffuseColor.a;
-  vec3 lightColor = vec3(1.84,1.27,0.99);
+  vec3 lightColor = vec3(1.0,1.0,1.0);
 
   /*----------  Ambient  ----------*/
   float ambientTerm = 0.1;
