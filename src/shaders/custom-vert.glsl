@@ -6,6 +6,7 @@
 uniform mat4 u_Model;
 uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
+uniform mat4 u_LightSpaceMatrix;
 uniform int u_Time;
 uniform vec4 u_Eye;
 

@@ -53,6 +53,10 @@ class ShaderProgram {
   unifInvViewProj: WebGLUniformLocation;
   unifInstanceModel: WebGLUniformLocation;
   unifInstanceModelInvTranspose: WebGLUniformLocation;
+  unifSMLightSpace: WebGLUniformLocation;
+  unifSMLightViewport: WebGLUniformLocation;
+  unifShadowTexture: WebGLUniformLocation;
+  unifLightPos: WebGLUniformLocation;
 
   unifControlsWaterOpacity: WebGLUniformLocation;
   unifControlsWaterColor: WebGLUniformLocation;
@@ -95,17 +99,12 @@ class ShaderProgram {
     this.unifDimensions = gl.getUniformLocation(this.prog, "u_Dimensions");
     this.unifInstanceModel = gl.getUniformLocation(this.prog, "u_InstanceModel");
     this.unifInstanceModelInvTranspose = gl.getUniformLocation(this.prog, "u_InstanceModelInvTranspose");
+    this.unifLightPos = gl.getUniformLocation(this.prog, "u_LightPos");
+    
 
-    this.unifControlsWaterOpacity = gl.getUniformLocation(this.prog, "u_ControlsWaterOpacity");
-    this.unifControlsWaterColor = gl.getUniformLocation(this.prog, "u_ControlsWaterColor");
-    this.unifControlsWaterLevel = gl.getUniformLocation(this.prog, "u_ControlsWaterLevel");
-
-    this.unifControlsWaterBedrock1Color = gl.getUniformLocation(this.prog, "u_ControlsWaterBedrock1Color");
-    this.unifControlsWaterBedrock2Color = gl.getUniformLocation(this.prog, "u_ControlsWaterBedrock2Color");
-    this.unifControlsShoreLevel = gl.getUniformLocation(this.prog, "u_ControlsShoreLevel");
-    this.unifControlsSandColor = gl.getUniformLocation(this.prog, "u_ControlsSandColor");
-    this.unifControlsElevation = gl.getUniformLocation(this.prog, "u_ControlsElevation");
-    this.unifControlsNoiseScale = gl.getUniformLocation(this.prog, "u_ControlsNoiseScale");
+    this.unifSMLightSpace = gl.getUniformLocation(this.prog, "u_LightSpaceMatrix");
+    this.unifSMLightViewport = gl.getUniformLocation(this.prog, "u_LightViewportMatrix");
+    this.unifShadowTexture = gl.getUniformLocation(this.prog, "u_ShadowTexture");
   }
 
   use() {
@@ -260,6 +259,13 @@ class ShaderProgram {
     }
   }
 
+  setLightPosition(light: vec3) {
+    this.use();
+    if (this.unifLightPos !== -1) {
+      gl.uniform3fv(this.unifLightPos, light);
+    }
+  }
+
   /**
    * @brief      Sets the texture slot 0 to the uniform variable.
    *
@@ -276,6 +282,25 @@ class ShaderProgram {
       gl.uniform1i(this.unifTexture2, 2);
     }  else if (this.unifTexture3 !== -1 && slot == 3) {
       gl.uniform1i(this.unifTexture3, 3);
+    }
+  }
+
+  setShadowMapMatrices(lightSpace: mat4, lightViewport: mat4) {
+    this.use();
+    if (this.unifSMLightSpace !== -1) {
+      gl.uniformMatrix4fv(this.unifSMLightSpace, false, lightSpace);
+    }
+
+    if (this.unifSMLightViewport !== -1) {
+      gl.uniformMatrix4fv(this.unifSMLightViewport, false, lightViewport);
+    }
+  }
+
+  setShadowTexture(num: number) {
+    this.use();
+
+    if (this.unifShadowTexture != -1) {
+      gl.uniform1i(this.unifShadowTexture, num);
     }
   }
 

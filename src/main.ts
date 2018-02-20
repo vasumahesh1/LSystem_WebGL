@@ -1,4 +1,4 @@
-import { vec3, vec4, mat4 } from 'gl-matrix';
+import { vec3, vec4, mat4, glMatrix } from 'gl-matrix';
 import * as Stats from 'stats-js';
 import * as DAT from 'dat-gui';
 import Icosphere from './geometry/Icosphere';
@@ -32,12 +32,18 @@ let controls = {
   toggleCollisionButton: toggleCollision,
   toggleLeavesButton: toggleLeaves,
   saveImage: saveImage,
-  geometryColor: [255, 0, 0],
+  lightDirection: [15, 15, 15],
 
   waterControls: {
     opacity: 0.65
   }
 };
+
+const SM_VIEWPORT_TRANSFORM:mat4 = mat4.fromValues(
+  0.5, 0.0, 0.0, 0.0,
+  0.0, 0.5, 0.0, 0.0,
+  0.0, 0.0, 0.5, 0.0,
+  0.5, 0.5, 0.5, 1.0);
 
 const LEAF_COLOR_GRADIENT: Array<vec4> = [
   vec4.fromValues(231, 222, 81, 255),
@@ -71,6 +77,7 @@ let leafShader: ShaderProgram;
 let terrainShader: ShaderProgram;
 let skyShader: ShaderProgram;
 let visualShader: ShaderProgram;
+let shadowMapShader: ShaderProgram;
 
 
 let leafShaderList: Array<ShaderProgram>;
@@ -249,6 +256,189 @@ function constructGUI() {
   group.add(shaderControls, 'noiseScale', 0.1, 2.0).step(0.01).name('Terrain Noise Scale').listen();
 }
 
+function lookAtMat4(out: any, eye: any, center: any, up: any) {
+  let x0, x1, x2, y0, y1, y2, z0, z1, z2, len;
+  let eyex = eye[0];
+  let eyey = eye[1];
+  let eyez = eye[2];
+  let upx = up[0];
+  let upy = up[1];
+  let upz = up[2];
+  let centerx = center[0];
+  let centery = center[1];
+  let centerz = center[2];
+
+  if (Math.abs(eyex - centerx) < glMatrix.EPSILON &&
+      Math.abs(eyey - centery) < glMatrix.EPSILON &&
+      Math.abs(eyez - centerz) < glMatrix.EPSILON) {
+    return mat4.identity(out);
+  }
+
+  z0 = eyex - centerx;
+  z1 = eyey - centery;
+  z2 = eyez - centerz;
+
+  len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
+  z0 *= len;
+  z1 *= len;
+  z2 *= len;
+
+  x0 = upy * z2 - upz * z1;
+  x1 = upz * z0 - upx * z2;
+  x2 = upx * z1 - upy * z0;
+  len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
+  if (!len) {
+    x0 = 0;
+    x1 = 0;
+    x2 = 0;
+  } else {
+    len = 1 / len;
+    x0 *= len;
+    x1 *= len;
+    x2 *= len;
+  }
+
+  y0 = z1 * x2 - z2 * x1;
+  y1 = z2 * x0 - z0 * x2;
+  y2 = z0 * x1 - z1 * x0;
+
+  len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
+  if (!len) {
+    y0 = 0;
+    y1 = 0;
+    y2 = 0;
+  } else {
+    len = 1 / len;
+    y0 *= len;
+    y1 *= len;
+    y2 *= len;
+  }
+
+  out[0] = x0;
+  out[1] = y0;
+  out[2] = z0;
+  out[3] = 0;
+  out[4] = x1;
+  out[5] = y1;
+  out[6] = z1;
+  out[7] = 0;
+  out[8] = x2;
+  out[9] = y2;
+  out[10] = z2;
+  out[11] = 0;
+  out[12] = -(x0 * eyex + x1 * eyey + x2 * eyez);
+  out[13] = -(y0 * eyex + y1 * eyey + y2 * eyez);
+  out[14] = -(z0 * eyex + z1 * eyey + z2 * eyez);
+  out[15] = 1;
+
+  return out;
+}
+
+function setShadowMapData(shader: ShaderProgram) {
+  let lightDir = controls.lightDirection;
+  let lightDirection =  vec3.fromValues(lightDir[0], lightDir[1], lightDir[2]);
+
+  let lightSpaceOrthoProj = mat4.create();
+  mat4.ortho(lightSpaceOrthoProj, -8.0, 8.0, -8.0, 8.0, 0.0, 100.0);
+
+
+  let lightSpaceView = mat4.create();
+  lookAtMat4(lightSpaceView, lightDirection, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+  let lightSpaceModel = mat4.create();
+  let lightSpaceViewProj = mat4.create();
+
+  mat4.multiply(lightSpaceViewProj, lightSpaceView, lightSpaceModel);
+  mat4.multiply(lightSpaceViewProj, lightSpaceOrthoProj, lightSpaceViewProj);
+
+  // Convert Model Space -> Light Space Matrix (outputs NDC) to output texCoords between 0 & 1
+  let lightSpaceToViewport = mat4.create();
+  mat4.multiply(lightSpaceToViewport, SM_VIEWPORT_TRANSFORM, lightSpaceViewProj);
+
+  shader.setShadowMapMatrices(lightSpaceViewProj, lightSpaceToViewport);
+}
+
+function createFrameBuffer(gl: WebGL2RenderingContext, frameRefs: any) {
+
+    // Creating a Framebuffer
+    let frameBuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+    // Creating a texture that is outputed to by the frame buffer
+    let frameTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, frameTexture);
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, window.innerWidth, window.innerHeight, 0, gl.RGB, gl.UNSIGNED_BYTE, 0);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+
+    const attachmentPoint = gl.COLOR_ATTACHMENT0;
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, frameTexture, 0);
+
+    // Creating a depth buffer
+    let depthBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.FRAMEBUFFER, depthBuffer);
+
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, window.innerWidth, window.innerHeight);
+
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer)
+
+
+    let drawBuffers = [gl.COLOR_ATTACHMENT0];
+    gl.drawBuffers(drawBuffers);
+
+    // Adding a safe Check log
+    let status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    if(status != gl.FRAMEBUFFER_COMPLETE) {
+        console.error("Error while creating framebuffer");
+    }
+
+    frameRefs.frameBuffer = frameBuffer;
+    frameRefs.depthBuffer = depthBuffer;
+    frameRefs.frameTexture = frameTexture;
+}
+
+function createShadowMapFrameBuffer(gl: WebGL2RenderingContext, frameRefs: any) {
+
+    // Creating a Framebuffer
+    let frameBuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+    // Creating a texture that is outputed to by the frame buffer
+    let frameTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, frameTexture);
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, window.innerWidth, window.innerHeight, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    const attachmentPoint = gl.COLOR_ATTACHMENT0;
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, frameTexture, 0);
+
+    // Creating a depth buffer
+    let depthBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, window.innerWidth, window.innerHeight);
+
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer)
+
+
+    // Adding a safe Check log
+    let status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    if(status != gl.FRAMEBUFFER_COMPLETE) {
+        console.error("Error while creating framebuffer");
+    }
+
+    frameRefs.frameBuffer = frameBuffer;
+    frameRefs.depthBuffer = depthBuffer;
+    frameRefs.frameTexture = frameTexture;
+}
+
 /**
  * @brief      Main execution code
  *
@@ -273,6 +463,7 @@ function main() {
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement>document.getElementById('canvas');
   const gl = <WebGL2RenderingContext>canvas.getContext('webgl2');
+ 
   if (!gl) {
     alert('WebGL 2 not supported!');
   }
@@ -313,11 +504,20 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/visual-frag.glsl')),
   ]);
 
+  shadowMapShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/sm-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/sm-frag.glsl')),
+  ]);
+
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   loadAssets();
   loadPlanetScene();
+
+  let shadowMapBuffer:any = {};
+
+  createShadowMapFrameBuffer(gl, shadowMapBuffer);
 
   // This function will be called every frame
   function tick() {
@@ -327,16 +527,47 @@ function main() {
 
     let rotDelta = mat4.create();
 
+    let lightDir = controls.lightDirection;
+    let lightDirection =  vec3.fromValues(lightDir[0], lightDir[1], lightDir[2]);
+
     mat4.fromRotation(rotDelta, degrees * 0.0174533, vec3.fromValues(0, 1, 0));
     mat4.multiply(icosphere.modelMatrix, icosphere.modelMatrix, rotDelta);
 
     camera.update();
     let position = camera.getPosition();
     stats.begin();
+
+    /*----------  Render Shadow Map into Buffer  ----------*/
+    gl.bindFramebuffer(gl.FRAMEBUFFER, shadowMapBuffer.frameBuffer);
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
 
-    // shaderControls.waterControls.opacity = controls.waterControls.opacity;
+    shadowMapShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
+
+    setShadowMapData(shadowMapShader);
+
+    let chunks = branchInstanced.getNumChunks();
+    for (let ctr = 0; ctr < chunks; ++ctr) {
+      shadowMapShader.setInstanceModelMatrices(branchInstanced.getChunkedInstanceModelMatrices(ctr));
+      renderer.render(camera, shadowMapShader, [branchInstanced]);
+    }
+
+    if (drawLeaves) {
+      for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
+        let instance = leafInstances[i];
+
+        chunks = instance.getNumChunks();
+        for (let ctr = 0; ctr < chunks; ++ctr) {
+          shadowMapShader.setInstanceModelMatrices(instance.getChunkedInstanceModelMatrices(ctr));
+          renderer.render(camera, shadowMapShader, [instance]);
+        }
+      }
+    }
+
+    /*----------  Render Scene  ----------*/
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, window.innerWidth, window.innerHeight);
+    renderer.clear();
 
     gl.disable(gl.DEPTH_TEST);
 
@@ -349,14 +580,21 @@ function main() {
     activeShader.setTime(frameCount);
     activeShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
 
-    // activeShader.setInstanceModelMatrices(branchInstanced.getInstanceModelMatrices());
-    // renderer.render(camera, activeShader, [branchInstanced]);
-
     terrainShader.setTime(frameCount);
+    terrainShader.setLightPosition(lightDirection);
+
+    terrainShader.setShadowTexture(1);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, shadowMapBuffer.frameTexture);
+
+    setShadowMapData(terrainShader);
+
     terrainShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
     renderer.render(camera, terrainShader, [plane]);
 
     if (!drawOnlyCollisions) {
+
+      activeShader.setLightPosition(lightDirection);
 
       let chunks = branchInstanced.getNumChunks();
       for (let ctr = 0; ctr < chunks; ++ctr) {
@@ -367,6 +605,7 @@ function main() {
       if (drawLeaves) {
         leafShader.setTime(frameCount);
         leafShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
+        leafShader.setLightPosition(lightDirection);
 
         for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
           let instance = leafInstances[i];
@@ -380,21 +619,6 @@ function main() {
       }
     }
     
-    // for (let ctr = 0; ctr < branchShaderList.length; ++ctr) {
-    //   let shader = branchShaderList[ctr];
-    //   shader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
-    //   renderer.render(camera, shader, [leaf1Instanced]);
-    // }
-
-    // for (let ctr = 0; ctr < leafShaderList.length; ++ctr) {
-    //   let shader = leafShaderList[ctr];
-    //   shader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
-    //   renderer.render(camera, shader, [leaf1Instanced]);
-    // }
-
-    // leafShader.setInstanceModelMatrices(leaf1Instanced.getInstanceModelMatrices());
-    // renderer.render(camera, leafShader, [leaf1Instanced]);
-
     if (drawOnlyCollisions) {
       visualShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
       renderer.render(camera, visualShader, [boundingLines]);

@@ -26,6 +26,7 @@ var distance = function(a: any, b: any){
 
 var boundingBoxes : Array<any> = [];
 var objectsTree = new kdTree([], distance);
+var leavesTree = new kdTree([], distance);
 // Tree Data:
 //
 // {
@@ -259,7 +260,7 @@ function drawBranchLeaf2() {
   let offset = mat4.create();
   let meshScale = mat4.create();
 
-  let baseScale = 0.35;
+  let baseScale = 0.3;
 
   mat4.fromZRotation(transformZ, degreeToRad(33));
   mat4.fromScaling(meshScale, vec3.fromValues(baseScale, baseScale, baseScale));
@@ -269,8 +270,11 @@ function drawBranchLeaf2() {
   mat4.multiply(instModel, this.turtle.transform, transform);
 
   let localOrigin = vec4.fromValues(0.0, 0.0, 0.0, 1);
+  let localMidPoint = vec4.fromValues(0.0, -1.0, 0.0, 1);
   let worldOrigin = vec4.create();
+  let worldMidPoint = vec4.create();
   vec4.transformMat4(worldOrigin, vec4.fromValues(0.0, 0.0, 0.0, 1), instModel);
+  vec4.transformMat4(worldMidPoint, localMidPoint, instModel);
 
   if (worldOrigin[1] < 1.0) {
     return;
@@ -280,6 +284,23 @@ function drawBranchLeaf2() {
   if (val > 1.0) {
     val = 1.0;
   }
+
+  // if (this.scope.influencers.collisionCheck) {
+  //   var nearest = leavesTree.nearest({
+  //     coordinates: [worldMidPoint[0], worldMidPoint[1], worldMidPoint[3]]
+  //   }, 20);
+
+  //   for (var j = 0; j < nearest.length; ++j) {
+  //     let obj = nearest[j][0];
+  //     let coords = obj.coordinates;
+
+  //     let dist = distance({coordinates: worldMidPoint}, obj);
+
+  //     if (dist < 1) {
+  //       return;
+  //     }
+  //   }
+  // }
 
   let leafInstances = this.scope.leafInstances;
 
@@ -324,6 +345,11 @@ function drawBranchLeaf2() {
   if (useLast) {
     meshInstance = leafInstances[leafInstances.length - 1];
   }
+
+  // leavesTree.insert({
+  //   type: "leaf",
+  //   coordinates: [worldMidPoint[0], worldMidPoint[1], worldMidPoint[2]]
+  // });
 
   meshInstance.addInstanceUsingTransform(instModel);
 }
@@ -419,12 +445,12 @@ class LSystem1 {
     // this.system.addRule("F", "F[/F]F[*F]F");
     // this.system.addRule("F", "F[/F]F[*F]F");
     
-    this.system.addWeightedRule("F", "BS++[/BFS][*BbFS]++[/BFS][*BbFS]", 0.5);
-    this.system.addWeightedRule("F", "BS++[/BFS][*BbFS]", 0.3);
+    this.system.addWeightedRule("F", "BS++[/BFS][*BFS]++[/BFS][*BbFS]", 0.5);
+    this.system.addWeightedRule("F", "BS++[/BFS][*BFS]", 0.3);
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "BS", 0.2);
-    this.system.addWeightedRule("B", "SD[l+++l+++l]SD", 0.2);
+    this.system.addWeightedRule("B", "SD[l]SD", 0.2);
     // this.system.addWeightedRule("B", "DD", 0.8);
     // this.system.addWeightedRule("F", "--FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.8);
     // this.system.addWeightedRule("F", "++FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.4);

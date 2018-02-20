@@ -4,16 +4,14 @@ precision highp float;
 
 uniform vec4 u_Eye;
 uniform vec4 u_Color;
-uniform sampler2D u_Texture;
-uniform sampler2D u_Texture1;
-uniform sampler2D u_Texture2;
-uniform sampler2D u_Texture3;
+uniform sampler2D u_ShadowTexture;
 
 in vec4 fs_Nor;
 in vec4 fs_LightVec;
 in vec4 fs_Col;
 in vec4 fs_SphereNor;
 in vec4 fs_Pos;
+in vec4 fs_ShadowCoord;
 in float fs_Spec;
 in float fs_Valid;
 in float fs_useMatcap;
@@ -21,6 +19,8 @@ in float fs_useMatcap;
 out vec4 out_Col;
 
 void main() {
+
+  vec3 mask = vec3(1.0) - vec3(texture(u_ShadowTexture, fs_ShadowCoord.xy).r);
 
   // Material base color (before shading)
   vec4 diffuseColor = fs_Col;
@@ -48,7 +48,7 @@ void main() {
   float lightIntensity =
       ambientTerm + (diffuseTerm + specularTerm);
 
-  vec4 finalColor = vec4(diffuseColor.rgb * lightColor * lightIntensity, alpha);
+  vec4 finalColor = vec4(diffuseColor.rgb * lightColor * mask * lightIntensity, alpha);
   finalColor.x = clamp(finalColor.x, 0.0, 1.0);
   finalColor.y = clamp(finalColor.y, 0.0, 1.0);
   finalColor.z = clamp(finalColor.z, 0.0, 1.0);

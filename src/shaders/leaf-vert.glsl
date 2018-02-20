@@ -8,6 +8,8 @@ uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
 uniform int u_Time;
 uniform vec4 u_Eye;
+uniform mat4 u_LightSpaceMatrix;
+uniform mat4 u_LightViewportMatrix;
 
 uniform mat4 u_InstanceModel[MAX_INSTANCES];
 
@@ -32,6 +34,7 @@ out vec4 fs_LightVec;
 out vec4 fs_Col;
 out vec4 fs_Pos;
 out vec4 fs_SphereNor;
+out vec4 fs_ShadowCoord;
 out float fs_Spec;
 out float fs_Valid;
 out float fs_useMatcap;
@@ -53,6 +56,8 @@ void main() {
   vec4 modelposition = instanceModel * u_Model * vertexPosition;
 
   fs_Pos = modelposition;
+
+  fs_ShadowCoord = u_LightViewportMatrix * modelposition;
 
   fs_LightVec = lightPos - modelposition;
 
