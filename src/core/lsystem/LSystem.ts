@@ -11,7 +11,7 @@ let Noise = require('noisejs').Noise;
 var Logger = require('debug');
 var dTransform = Logger("lsystem:trace:transform");
 var dStack = Logger("lsystem:trace:stack");
-var dConstruct = Logger("lsystem:info:construction");
+var dConstruct = Logger("lsystem:trace:construction");
 
 class LSystemSymbol {
   value: string;

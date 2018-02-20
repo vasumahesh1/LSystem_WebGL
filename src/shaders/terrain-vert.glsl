@@ -8,6 +8,7 @@ uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
 uniform int u_Time;
 uniform vec4 u_Eye;
+uniform vec3 u_LightPos;
 uniform mat4 u_LightViewportMatrix;
 
 uniform mat4 u_InstanceModel[MAX_INSTANCES];
@@ -40,7 +41,6 @@ out vec4 fs_ShadowCoord;
 
 void main() {
   vec4 vertexColor;
-  vec4 lightPos = vec4(0, 15, 0, 1);
   vec4 vertexPosition = vs_Pos;
   vec4 vertexNormal = vs_Nor;
 
@@ -54,7 +54,7 @@ void main() {
 
   fs_Pos = modelposition;
 
-  fs_LightVec = lightPos - modelposition;
+  fs_LightVec = vec4(u_LightPos, 0) - modelposition;
 
   gl_Position = u_ViewProj * modelposition;
 }

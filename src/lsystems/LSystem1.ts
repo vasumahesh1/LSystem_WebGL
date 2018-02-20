@@ -260,12 +260,12 @@ function drawBranchLeaf2() {
   let offset = mat4.create();
   let meshScale = mat4.create();
 
-  let baseScale = 0.3;
+  let baseScale = 0.2;
 
-  mat4.fromZRotation(transformZ, degreeToRad(33));
+  // mat4.fromZRotation(transformZ, degreeToRad(75));
   mat4.fromScaling(meshScale, vec3.fromValues(baseScale, baseScale, baseScale));
 
-  mat4.multiply(transform, transform, transformZ);
+  // mat4.multiply(transform, transform, transformZ);
   mat4.multiply(transform, transform, meshScale);
   mat4.multiply(instModel, this.turtle.transform, transform);
 
@@ -273,8 +273,34 @@ function drawBranchLeaf2() {
   let localMidPoint = vec4.fromValues(0.0, -1.0, 0.0, 1);
   let worldOrigin = vec4.create();
   let worldMidPoint = vec4.create();
+  let worldHead = vec4.create();
+  let worldHeadVec3 = vec3.create();
   vec4.transformMat4(worldOrigin, vec4.fromValues(0.0, 0.0, 0.0, 1), instModel);
   vec4.transformMat4(worldMidPoint, localMidPoint, instModel);
+
+  vec4.sub(worldHead, worldMidPoint, worldOrigin);
+  worldHeadVec3 = vec3.fromValues(worldHead[0], worldHead[1], worldHead[2]);
+  vec3.normalize(worldHeadVec3, worldHeadVec3);
+
+  let xzVec = vec3.fromValues(1,0,1);
+  vec3.normalize(xzVec, xzVec);
+
+  // let angle = degreeToRad(45);
+
+  let angle = Math.acos(vec3.dot(worldHeadVec3, xzVec));
+
+  // let draw = false;
+
+  if (Math.abs(angle) > degreeToRad(120)) {
+    angle = Math.PI - angle;
+    // draw = true;
+  }
+
+  // if (!draw) return;
+
+  mat4.fromZRotation(transformZ, angle);
+  mat4.multiply(instModel, instModel, transformZ);
+
 
   if (worldOrigin[1] < 1.0) {
     return;
@@ -380,7 +406,7 @@ function natureTick() {
   mat4.fromRotation(sunTransform, degreeToRad(10) * this.scope.influencers.sunlight, planeNormal);
 
   let gravityTransform = mat4.create();
-  let gravityFactor = this.depth;
+  let gravityFactor = this.depth / this.maxDepth;
 
   planeNormal = vec3.create();
   vec3.cross(planeNormal, worldHeadVec3, vec3.fromValues(0,-1,0));
@@ -445,12 +471,12 @@ class LSystem1 {
     // this.system.addRule("F", "F[/F]F[*F]F");
     // this.system.addRule("F", "F[/F]F[*F]F");
     
-    this.system.addWeightedRule("F", "BS++[/BFS][*BFS]++[/BFS][*BbFS]", 0.5);
+    this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS][*bBFS]", 0.5);
     this.system.addWeightedRule("F", "BS++[/BFS][*BFS]", 0.3);
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "BS", 0.2);
-    this.system.addWeightedRule("B", "SD[l]SD", 0.2);
+    this.system.addWeightedRule("B", "SD[l+++l+++l]SD", 0.2);
     // this.system.addWeightedRule("B", "DD", 0.8);
     // this.system.addWeightedRule("F", "--FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.8);
     // this.system.addWeightedRule("F", "++FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.4);
@@ -468,17 +494,13 @@ class LSystem1 {
     this.system.addSymbol("/", rotateTiltCW, []);
     this.system.addSymbol("*", rotateTiltCCW, []);
 
-    let sunlightDir = vec3.create();
-    vec3.normalize(sunlightDir, vec3.fromValues(20, 20, 20));
-
     this.scope = {
       instanceMap: this.instanceMap,
-      sunlightDir: sunlightDir,
       collisionCount: 0,
 
       influencers: {
         sunlight: 0.0,
-        gravity: 0.1,
+        gravity: 0.0,
         collisionCheck: true
       }
     };

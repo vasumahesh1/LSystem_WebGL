@@ -32,11 +32,7 @@ let controls = {
   toggleCollisionButton: toggleCollision,
   toggleLeavesButton: toggleLeaves,
   saveImage: saveImage,
-  lightDirection: [15, 15, 15],
-
-  waterControls: {
-    opacity: 0.65
-  }
+  lightDirection: [15, 15, 15]
 };
 
 const SM_VIEWPORT_TRANSFORM:mat4 = mat4.fromValues(
@@ -46,10 +42,18 @@ const SM_VIEWPORT_TRANSFORM:mat4 = mat4.fromValues(
   0.5, 0.5, 0.5, 1.0);
 
 const LEAF_COLOR_GRADIENT: Array<vec4> = [
-  vec4.fromValues(231, 222, 81, 255),
-  vec4.fromValues(157, 206, 52, 255),
-  vec4.fromValues(136, 181, 71, 255),
-  vec4.fromValues(119, 154, 26, 255),
+  // vec4.fromValues(231, 222, 81, 255),
+  // vec4.fromValues(157, 206, 52, 255),
+  // vec4.fromValues(136, 181, 71, 255),
+  // vec4.fromValues(119, 154, 26, 255),
+  // // vec4.fromValues(189, 153, 43, 255),
+  // vec4.fromValues(153, 72, 9, 255)
+  
+  vec4.fromValues(97, 130, 47, 255),
+  vec4.fromValues(111, 140, 7, 255),
+  vec4.fromValues(242, 206, 22, 255),
+  vec4.fromValues(242, 164, 19, 255),
+  vec4.fromValues(242, 79, 19, 255),
   // vec4.fromValues(189, 153, 43, 255),
   // vec4.fromValues(153, 72, 9, 255)
 ];
@@ -191,10 +195,14 @@ function loadAssets() {
       return Promise.all(leafLoadPromises);
     })
     .then(function() {
+      let lightDir = controls.lightDirection;
+      let lightDirection =  vec3.fromValues(lightDir[0], lightDir[1], lightDir[2]);
+
       customLSystem.addInstance("leaf1", leaf1Instanced);
       customLSystem.addInstance("branch", branchInstanced);
       customLSystem.addScope("boundingLines", boundingLines);
       customLSystem.addScope("leafInstances", leafInstances);
+      customLSystem.addScope("sunlightDir", lightDirection);
       customLSystem.construct(4);
 
       for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
