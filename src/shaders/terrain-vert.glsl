@@ -39,14 +39,13 @@ out float fs_useMatcap;
 
 void main() {
   vec4 vertexColor;
-  vec4 lightPos = vec4(-10, -10, -10, 1);
+  vec4 lightPos = vec4(0, 15, 0, 1);
   vec4 vertexPosition = vs_Pos;
   vec4 vertexNormal = vs_Nor;
 
-  fs_Col = vec4(0,0.7,0.3,1);
+  fs_Col = vec4(64,21,15, 255) / 255.0;
 
-  mat3 invTranspose = mat3(u_ModelInvTr);
-  fs_Nor = vec4(invTranspose * vec3(vertexNormal), 0);
+  fs_Nor = vertexNormal;  
 
   vec4 modelposition = u_Model * vertexPosition;
 

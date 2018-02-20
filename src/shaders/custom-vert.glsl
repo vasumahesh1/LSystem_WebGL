@@ -41,20 +41,15 @@ out float fs_useMatcap;
 
 void main() {
   vec4 vertexColor;
-  vec4 lightPos = vec4(0, 0, 15, 1);
+  vec4 lightPos = vec4(0, 15, 0, 1);
   vec4 vertexPosition = vs_Pos;
   vec4 vertexNormal = vs_Nor;
+  mat4 instanceModel = u_InstanceModel[gl_InstanceID];
 
   fs_Col = vec4(64,21,15, 255) / 255.0;
 
-  mat3 invTranspose = mat3(u_ModelInvTr);
-  // invTranspose = mat3(u_InstanceModelInvTranspose[gl_InstanceID]) * invTranspose;
+  mat3 invTranspose = inverse(mat3(instanceModel));
   fs_Nor = vec4(invTranspose * vec3(vertexNormal), 0);
-
-  mat4 instanceModel = mat4(1.0);
-  // instanceModel[3] = vs_InstPos;
-
-  instanceModel = u_InstanceModel[gl_InstanceID];
 
   vec4 modelposition = instanceModel * u_Model * vertexPosition;
 

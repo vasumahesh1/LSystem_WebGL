@@ -117,7 +117,7 @@ class NoisePlane extends Drawable {
         let vec2 = vec3.fromValues(0, noise3 - noise2, heightStep);
 
         let normal = vec3.create();
-        vec3.cross(normal, vec2, vec1);
+        vec3.cross(normal, vec1, vec2);
         vec3.normalize(normal, normal);
 
         this.normals = concatFloat32Array(this.normals,

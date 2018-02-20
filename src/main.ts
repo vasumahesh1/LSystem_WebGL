@@ -152,7 +152,7 @@ function loadAssets() {
       customLSystem.addInstance("leaf1", leaf1Instanced);
       customLSystem.addInstance("branch", branchInstanced);
       customLSystem.addScope("boundingLines", boundingLines);
-      customLSystem.construct(3);
+      customLSystem.construct(4);
 
       boundingLines.create();
       branchInstanced.create();
@@ -310,8 +310,6 @@ function main() {
     terrainShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
     renderer.render(camera, terrainShader, [plane]);
 
-    activeShader.setGeometryColor(vec4.fromValues(1,0,0,1));
-
     if (!drawOnlyCollisions) {
 
       let chunks = branchInstanced.getNumChunks();
@@ -322,7 +320,6 @@ function main() {
 
       leafShader.setTime(frameCount);
       leafShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
-      leafShader.setGeometryColor(vec4.fromValues(0,1,0,1));
 
       chunks = leaf1Instanced.getNumChunks();
       for (let ctr = 0; ctr < chunks; ++ctr) {
