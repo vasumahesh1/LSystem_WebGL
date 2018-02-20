@@ -211,8 +211,6 @@ class Cube extends Drawable {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVert);
     gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.STATIC_DRAW);
-
-    console.log(`Created Cube`);
   }
 };
 

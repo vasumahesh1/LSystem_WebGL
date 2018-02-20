@@ -48,9 +48,12 @@ class MeshInstanced extends Drawable {
   baseColor: vec4;
   rawMesh: any;
 
-  constructor() {
+  name: string;
+
+  constructor(n: string = "Unknown Mesh") {
     super();
     this.instanced = true;
+    this.name = n;
 
     this.positions = new Float32Array([]);
     this.normals = new Float32Array([]);
@@ -141,9 +144,9 @@ class MeshInstanced extends Drawable {
 
     let vertexCount = vertices.length;
 
-    dCreateInfo("Loading Vertices: " + vertexCount);
-    dCreateInfo("Loading Indices: " + indices.length);
-    dCreate("Loading Positions: " + this.positions.length);
+    dCreate("Loading Vertices: " + vertexCount);
+    dCreate("Loading Indices: " + indices.length);
+    dCreate("Loading Normals: " + vertexNormals.length);
 
     let colorArr =  new Float32Array([
       this.baseColor[0],
@@ -198,7 +201,7 @@ class MeshInstanced extends Drawable {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufCol);
     gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
       
-    dCreateInfo(`Created MeshInstanced with ${this.instances} Instances`);
+    dCreateInfo(`Created ${this.name} with ${this.instances} Instances`);
   }
 };
 

@@ -164,6 +164,10 @@ function drawBranchLarge() {
   vec4.transformMat4(worldHead, localHead, this.turtle.transform);
   vec4.transformMat4(worldOrigin, vec4.fromValues(0.0, 0.0, 0.0, 1), this.turtle.transform);
 
+  let noise = this.noiseGen.perlin3(worldOrigin[0], worldOrigin[1], worldOrigin[2]);
+
+  travelDistance += 0.1 * noise;
+
   if (worldOrigin[1] < 0) {
     return;
   }
@@ -380,6 +384,76 @@ function drawBranchLeaf2() {
   meshInstance.addInstanceUsingTransform(instModel);
 }
 
+
+function drawFlower() {
+  if (this.depth < 3) {
+    return;
+  }
+
+  let meshInstance = this.scope.instanceMap["flowerLeaf"];
+
+  let transform = mat4.create();
+  let transformX = mat4.create();
+  let transformZ = mat4.create();
+
+  let instModel = mat4.create();
+  let offset = mat4.create();
+  let meshScale = mat4.create();
+
+  let baseScale = 0.2;
+
+  // mat4.fromZRotation(transformZ, degreeToRad(75));
+  mat4.fromScaling(meshScale, vec3.fromValues(baseScale, baseScale, baseScale));
+
+  // mat4.multiply(transform, transform, transformZ);
+  mat4.multiply(transform, transform, meshScale);
+  mat4.multiply(instModel, this.turtle.transform, transform);
+
+  let localOrigin = vec4.fromValues(0.0, 0.0, 0.0, 1);
+  let localMidPoint = vec4.fromValues(0.0, -1.0, 0.0, 1);
+  let worldOrigin = vec4.create();
+  let worldMidPoint = vec4.create();
+  let worldHead = vec4.create();
+  let worldHeadVec3 = vec3.create();
+  vec4.transformMat4(worldOrigin, vec4.fromValues(0.0, 0.0, 0.0, 1), instModel);
+  vec4.transformMat4(worldMidPoint, localMidPoint, instModel);
+
+  vec4.sub(worldHead, worldMidPoint, worldOrigin);
+  worldHeadVec3 = vec3.fromValues(worldHead[0], worldHead[1], worldHead[2]);
+  vec3.normalize(worldHeadVec3, worldHeadVec3);
+
+  let xzVec = vec3.fromValues(1,0,1);
+  vec3.normalize(xzVec, xzVec);
+
+  // let angle = degreeToRad(45);
+
+  let angle = Math.acos(vec3.dot(worldHeadVec3, xzVec));
+
+  // let draw = false;
+
+  if (Math.abs(angle) > degreeToRad(120)) {
+    angle = Math.PI - angle;
+    // draw = true;
+  }
+
+  // if (!draw) return;
+
+  mat4.fromZRotation(transformZ, angle);
+  mat4.multiply(instModel, instModel, transformZ);
+
+
+  if (worldOrigin[1] < 1.0) {
+    return;
+  }
+
+  let val = worldOrigin[1] / 5.0;
+  if (val > 1.0) {
+    val = 1.0;
+  }
+
+  meshInstance.addInstanceUsingTransform(instModel);
+}
+
 function natureTick() {
   let worldMid = vec4.create();
   let worldOrigin = vec4.create();
@@ -471,19 +545,21 @@ class LSystem1 {
     // this.system.addRule("F", "F[/F]F[*F]F");
     // this.system.addRule("F", "F[/F]F[*F]F");
     
-    this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS][*bBFS]", 0.5);
-    this.system.addWeightedRule("F", "BS++[/BFS][*BFS]", 0.3);
+    this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS][*bBFS]", 5);
+    this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS]", 7);
+    this.system.addWeightedRule("F", "BS++[/BFS][*BFS]", 4);
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
     // this.system.addWeightedRule("F", "BS", 0.2);
-    this.system.addWeightedRule("B", "SD[l+++l+++l]SD", 0.2);
+    this.system.addWeightedRule("B", "SD[l+++l+++l]SDO", 0.2);
+
+    // this.system.addWeightedRule("O", "_", 0.8);
     // this.system.addWeightedRule("B", "DD", 0.8);
     // this.system.addWeightedRule("F", "--FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.8);
     // this.system.addWeightedRule("F", "++FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.4);
     
     // this.system.addRule("X", "F-[[X]+X]+F[+FX]-X");
     // this.system.addRule("F", "FF");
-
 
     this.system.addSymbol("l", drawBranchLeaf2, []);
     this.system.addSymbol("b", drawBranchLeaf2, []);
@@ -500,7 +576,7 @@ class LSystem1 {
 
       influencers: {
         sunlight: 0.0,
-        gravity: 0.0,
+        gravity: 5.0,
         collisionCheck: true
       }
     };

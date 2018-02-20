@@ -154,7 +154,7 @@ class NoisePlane extends Drawable {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVert);
     gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
 
-    dCreateInfo(`Created NoisePlane with ${this.vertices.length} Vertices`);
+    dCreateInfo(`Created Plane with ${this.vertices.length} Vertices`);
   }
 };
 

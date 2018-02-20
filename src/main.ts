@@ -66,7 +66,7 @@ let square: Square;
 let cube: Cube;
 let boundingLines: Line;
 let branchInstanced: MeshInstanced;
-let leaf1Instanced: MeshInstanced;
+let flowerLeafInstance: MeshInstanced;
 let leafInstances: Array<MeshInstanced>;
 let sky: Sky;
 let plane: NoisePlane;
@@ -168,14 +168,13 @@ function loadAssets() {
   boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
   boundingLines.linesArray.push(vec4.fromValues(0, 0, 30, 1.0));
 
-  branchInstanced = new MeshInstanced();
-  leaf1Instanced = new MeshInstanced();
+  branchInstanced = new MeshInstanced("Branch Mesh");
   leafInstances = new Array<MeshInstanced>();
 
   let leafLoadPromises: Array<any> = [];
 
   for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
-    let inst = new MeshInstanced();
+    let inst = new MeshInstanced("Leaf_Mesh_" + i);
     let color = LEAF_COLOR_GRADIENT[i];
     vec4.scale(color, color, 1 / 255);
     inst.setColor(color);
@@ -185,12 +184,8 @@ function loadAssets() {
   }
 
   branchInstanced.setColor(vec4.fromValues(0,0,0,1));
-  leaf1Instanced.setColor(vec4.fromValues(0,0,0,1));
 
   branchInstanced.load('./src/objs/branch1.obj')
-    .then(function() {
-      return leaf1Instanced.load('./src/objs/leaf4.obj');
-    })
     .then(function() {
       return Promise.all(leafLoadPromises);
     })
@@ -198,7 +193,6 @@ function loadAssets() {
       let lightDir = controls.lightDirection;
       let lightDirection =  vec3.fromValues(lightDir[0], lightDir[1], lightDir[2]);
 
-      customLSystem.addInstance("leaf1", leaf1Instanced);
       customLSystem.addInstance("branch", branchInstanced);
       customLSystem.addScope("boundingLines", boundingLines);
       customLSystem.addScope("leafInstances", leafInstances);
@@ -211,7 +205,6 @@ function loadAssets() {
 
       boundingLines.create();
       branchInstanced.create();
-      leaf1Instanced.create();
     });
 
   sky = new Sky(vec3.fromValues(0, 0, 0));

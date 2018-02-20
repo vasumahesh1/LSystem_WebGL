@@ -230,7 +230,7 @@ class LSystem {
     return this;
   }
 
-  selectRule(ruleSet: LSystemRuleSet) {
+  selectRule(ruleSet: LSystemRuleSet, stringItr: number, itr: number) {
     let totalWeight = ruleSet.totalWeight;
     let progress = 0.0;
 
@@ -238,12 +238,12 @@ class LSystem {
       return ruleSet.rules[0];
     }
 
-    let noise = this.noiseGen.simplex2(this.seed * 13, this.seed * 29);
+    let noise = this.noiseGen.simplex2(this.seed * stringItr * 13, this.seed * itr * 29);
 
     let ruleIdx: number;
     let random = noise * totalWeight;
 
-    for (var itr = ruleSet.rules.length - 1; itr >= 0; --itr) {
+    for (var itr = 0; itr < ruleSet.rules.length; ++itr) {
       let rule = ruleSet.rules[itr];
       progress += rule.weight;
 
@@ -273,7 +273,7 @@ class LSystem {
           continue;
         }
 
-        let rule = this.selectRule(symbolRuleSet);
+        let rule = this.selectRule(symbolRuleSet, stringItr, itr);
         nextString +=  rule.expr;
       }
 
