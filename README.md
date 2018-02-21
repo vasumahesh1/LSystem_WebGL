@@ -132,5 +132,6 @@ If you have the error "max uniforms exceeded". Thats because I am instancing the
 
 - [Segment Segment Intersection](http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment)
 - [KD Tree](https://www.npmjs.com/package/k-d-tree)
+- [noisejs](https://www.npmjs.com/package/noisejs)
 - [WebGL OBJ Loader](https://www.npmjs.com/package/webgl-obj-loader)
 - Class Slides
