@@ -26,13 +26,26 @@ localStorage.debug = 'lsystem:info*,lsystem:error*';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 let controls = {
-  tesselations: 9,
-  loadPlanetSceneButton: loadPlanetScene,
-  loadRedPlanetSceneButton: loadRedPlanetScene,
+  createButton: loadAssets,
   toggleCollisionButton: toggleCollision,
   toggleLeavesButton: toggleLeaves,
   saveImage: saveImage,
-  lightDirection: [15, 15, 15]
+  axiom: "[F][/-F][*+F][++*F][--*F]",
+  seed: 858.739,
+  iterations: 4,
+  lightDirection: [15, 15, 15],
+  influencers: {
+    sunlight: 0.0,
+    gravity: 5.0,
+    collisionCheck: true
+  },
+  constraints: {
+    minCollisionDistance: 0.015,
+    rotateTilt: 20,
+    rotateSwirl: 45,
+    rotateSNoise: 5,
+    rotateTNoise: 5,
+  }
 };
 
 const SM_VIEWPORT_TRANSFORM:mat4 = mat4.fromValues(
@@ -41,21 +54,12 @@ const SM_VIEWPORT_TRANSFORM:mat4 = mat4.fromValues(
   0.0, 0.0, 0.5, 0.0,
   0.5, 0.5, 0.5, 1.0);
 
-const LEAF_COLOR_GRADIENT: Array<vec4> = [
-  // vec4.fromValues(231, 222, 81, 255),
-  // vec4.fromValues(157, 206, 52, 255),
-  // vec4.fromValues(136, 181, 71, 255),
-  // vec4.fromValues(119, 154, 26, 255),
-  // // vec4.fromValues(189, 153, 43, 255),
-  // vec4.fromValues(153, 72, 9, 255)
-  
-  vec4.fromValues(97, 130, 47, 255),
-  vec4.fromValues(111, 140, 7, 255),
-  vec4.fromValues(242, 206, 22, 255),
-  vec4.fromValues(242, 164, 19, 255),
-  vec4.fromValues(242, 79, 19, 255),
-  // vec4.fromValues(189, 153, 43, 255),
-  // vec4.fromValues(153, 72, 9, 255)
+const LEAF_COLOR_GRADIENT: Array<any> = [  
+  [97, 130, 47, 255],
+  [111, 140, 7, 255],
+  [242, 206, 22, 255],
+  [242, 164, 19, 255],
+  [242, 79, 19, 255]
 ];
 
 let prevTime: number;
@@ -84,10 +88,6 @@ let visualShader: ShaderProgram;
 let shadowMapShader: ShaderProgram;
 
 
-let leafShaderList: Array<ShaderProgram>;
-let branchShaderList: Array<ShaderProgram>;
-
-let shaderMode: number = 0;
 let frameCount: number = 0;
 
 let shouldCapture: boolean = false;
@@ -95,52 +95,6 @@ let shouldCapture: boolean = false;
 let drawOnlyCollisions: boolean = false;
 let drawLeaves: boolean = true;
 
-let grassTexture: Texture;
-let grassDarkTexture: Texture;
-let mountainTexture: Texture;
-let snowTexture: Texture;
-
-/**
- * @brief      Loads the pokeball scene.
- */
-function loadPlanetScene() {
-  activeShader = branchShader;
-  shaderMode = 0;
-  frameCount = 0;
-
-  shaderControls.reset();
-
-  grassTexture = new Texture('./src/textures/planet1/foliage.png');
-  grassDarkTexture = new Texture('./src/textures/planet1/foliage_dark.png');
-  mountainTexture = new Texture('./src/textures/planet1/mountain.jpg');
-  snowTexture = new Texture('./src/textures/planet1/snow.png');
-
-  mat4.identity(icosphere.modelMatrix);
-}
-
-function loadRedPlanetScene() {
-  shaderControls.reset();
-  grassTexture = new Texture('./src/textures/planet2/soil.png');
-  grassDarkTexture = new Texture('./src/textures/planet2/soil.png');
-  mountainTexture = new Texture('./src/textures/planet2/mountain.jpg');
-  snowTexture = new Texture('./src/textures/planet2/snow.jpg');
-
-  shaderControls.waterControls.opacity = 0.95;
-  shaderControls.waterControls.level = 0.42;
-  shaderControls.waterControls.color = [193.0, 0.0, 1.0];
-  shaderControls.sandColor = [64.0, 33.0, 16.0];
-  shaderControls.elevation = 1.23;
-  shaderControls.shoreLevel = 0.37;
-  shaderControls.noiseScale = 0.81;
-
-  mat4.identity(icosphere.modelMatrix);
-}
-
-function loadTestScene() {
-  activeShader = terrainShader;
-  shaderMode = 0;
-  frameCount = 0;
-}
 
 function toggleLeaves() {
   drawLeaves = !drawLeaves;
@@ -150,16 +104,30 @@ function toggleLeaves() {
  * @brief      Loads the geometry assets
  */
 function loadAssets() {
-  customLSystem = new LSystem1(858.738169);
+  if (branchInstanced) {
+    branchInstanced.destory();
+  }
 
-  icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
-  // icosphere.create();
+  if (boundingLines) {
+    boundingLines.destory();
+  }
+
+  if (plane) {
+    plane.destory();
+  }
+
+  if (sky) {
+    sky.destory();
+  }
+
+  if (leafInstances) {
+    for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
+      leafInstances[i].destory();
+    }
+  }
 
   plane = new NoisePlane(500, 500, 75, 75, 8234.738169);
   plane.create();
-
-  cube = new Cube(vec3.fromValues(0, 0, 0));
-  cube.create();
 
   boundingLines = new Line();
 
@@ -175,7 +143,7 @@ function loadAssets() {
 
   for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
     let inst = new MeshInstanced("Leaf_Mesh_" + i);
-    let color = LEAF_COLOR_GRADIENT[i];
+    let color = vec4.fromValues(LEAF_COLOR_GRADIENT[i][0], LEAF_COLOR_GRADIENT[i][1], LEAF_COLOR_GRADIENT[i][2], LEAF_COLOR_GRADIENT[i][3]);
     vec4.scale(color, color, 1 / 255);
     inst.setColor(color);
     leafInstances.push(inst);
@@ -190,25 +158,34 @@ function loadAssets() {
       return Promise.all(leafLoadPromises);
     })
     .then(function() {
-      let lightDir = controls.lightDirection;
-      let lightDirection =  vec3.fromValues(lightDir[0], lightDir[1], lightDir[2]);
-
-      customLSystem.addInstance("branch", branchInstanced);
-      customLSystem.addScope("boundingLines", boundingLines);
-      customLSystem.addScope("leafInstances", leafInstances);
-      customLSystem.addScope("sunlightDir", lightDirection);
-      customLSystem.construct(4);
-
-      for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
-        leafInstances[i].create();
-      }
-
-      boundingLines.create();
-      branchInstanced.create();
+      createLSystem();
     });
 
   sky = new Sky(vec3.fromValues(0, 0, 0));
   sky.create();
+}
+
+function createLSystem() {
+  customLSystem = new LSystem1(controls.seed);
+  customLSystem.system.setAxiom(controls.axiom);
+
+  let lightDir = controls.lightDirection;
+  let lightDirection =  vec3.fromValues(lightDir[0], lightDir[1], lightDir[2]);
+
+  customLSystem.addInstance("branch", branchInstanced);
+  customLSystem.addScope("boundingLines", boundingLines);
+  customLSystem.addScope("leafInstances", leafInstances);
+  customLSystem.addScope("sunlightDir", lightDirection);
+  customLSystem.addScope("influencers", controls.influencers);
+  customLSystem.addScope("constraints", controls.constraints);
+  customLSystem.construct(controls.iterations);
+
+  for (var i = 0; i < LEAF_COLOR_GRADIENT.length; ++i) {
+    leafInstances[i].create();
+  }
+
+  boundingLines.create();
+  branchInstanced.create();
 }
 
 function saveImage() {
@@ -237,24 +214,36 @@ function downloadImage() {
 function constructGUI() {
   // Add controls to the gui
   const gui = new DAT.GUI();
-  gui.add(controls, 'loadPlanetSceneButton').name('Load Planet Scene');
-  gui.add(controls, 'loadRedPlanetSceneButton').name('Load Red Planet Scene');
   gui.add(controls, 'saveImage').name('Save Image');
-  gui.add(controls, 'toggleCollisionButton').name('Toggle Collision');
+  gui.add(controls, 'toggleCollisionButton').name('Toggle Collision View');
   gui.add(controls, 'toggleLeavesButton').name('Toggle Leaves');
+  gui.add(controls, 'iterations', 1, 10).step(1.0).name('Iterations').listen();
+  gui.add(controls, 'seed', 0, 32767).step(0.05).name('Seed').listen();
+  gui.add(controls, 'axiom').name('Axiom');
 
-  let group = gui.addFolder('Water Controls');
-  group.add(shaderControls.waterControls, 'opacity', 0, 1).step(0.05).name('Water Opacity').listen();
-  group.add(shaderControls.waterControls, 'level', 0, 1).step(0.01).name('Water Level').listen();
-  group.addColor(shaderControls.waterControls, 'color').name('Water Color').listen();
-  group.addColor(shaderControls, 'bedrock1Color').name('Water Bedrock 1 Color').listen();
-  group.addColor(shaderControls, 'bedrock2Color').name('Water Bedrock 2 Color').listen();
+  let group = gui.addFolder('Environment Influencers');
+  group.add(controls.influencers, 'gravity', 0, 30).step(1.0).name('Gravity Factor').listen();
+  group.add(controls.influencers, 'sunlight', 0, 1).step(0.1).name('Sunlight Bend Factor').listen();
+  group.add(controls.lightDirection, '0', -20, 20).step(1.0).name('Light X').listen();
+  group.add(controls.lightDirection, '1', -20, 20).step(1.0).name('Light Y').listen();
+  group.add(controls.lightDirection, '2', -20, 20).step(1.0).name('Light Z').listen();
 
-  group = gui.addFolder('Terrain Controls');
-  group.addColor(shaderControls, 'sandColor').name('Shore Color').listen();
-  group.add(shaderControls, 'shoreLevel', 0, 1).step(0.01).name('Shore Level').listen();
-  group.add(shaderControls, 'elevation', 0.1, 2.0).step(0.01).name('Terrain Elevation').listen();
-  group.add(shaderControls, 'noiseScale', 0.1, 2.0).step(0.01).name('Terrain Noise Scale').listen();
+  group = gui.addFolder('Constraints');
+  group.add(controls.constraints, 'minCollisionDistance', 0, 0.05).step(0.005).name('minBranchCollisionDistance').listen();
+  group.add(controls.constraints, 'rotateSwirl', 0, 90).step(1.0).name('Swirl Rotate').listen();
+  group.add(controls.constraints, 'rotateTilt', 0, 90).step(1.0).name('Tilt Rotate').listen();
+  group.add(controls.constraints, 'rotateTNoise', 0, 20).step(1.0).name('Tilt Noise').listen();
+  group.add(controls.constraints, 'rotateSNoise', 0, 20).step(1.0).name('Swirl Noise').listen();
+  group.add(controls.influencers, 'collisionCheck').name('Collision Check').listen();
+
+  group = gui.addFolder('Colors');
+  group.addColor(LEAF_COLOR_GRADIENT, '0').name('Leaf Color 1').listen();
+  group.addColor(LEAF_COLOR_GRADIENT, '1').name('Leaf Color 2').listen();
+  group.addColor(LEAF_COLOR_GRADIENT, '2').name('Leaf Color 3').listen();
+  group.addColor(LEAF_COLOR_GRADIENT, '3').name('Leaf Color 4').listen();
+  group.addColor(LEAF_COLOR_GRADIENT, '4').name('Leaf Color 5').listen();
+
+  gui.add(controls, 'createButton').name('Generate');
 }
 
 function lookAtMat4(out: any, eye: any, center: any, up: any) {
@@ -448,9 +437,6 @@ function createShadowMapFrameBuffer(gl: WebGL2RenderingContext, frameRefs: any) 
 function main() {
   shaderControls = new ShaderControls();
 
-  leafShaderList = new Array<ShaderProgram>();
-  branchShaderList = new Array<ShaderProgram>();
-
   // Initial display for framerate
   const stats = Stats();
   stats.setMode(0);
@@ -514,7 +500,6 @@ function main() {
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   loadAssets();
-  loadPlanetScene();
 
   let shadowMapBuffer:any = {};
 
@@ -530,9 +515,6 @@ function main() {
 
     let lightDir = controls.lightDirection;
     let lightDirection =  vec3.fromValues(lightDir[0], lightDir[1], lightDir[2]);
-
-    mat4.fromRotation(rotDelta, degrees * 0.0174533, vec3.fromValues(0, 1, 0));
-    mat4.multiply(icosphere.modelMatrix, icosphere.modelMatrix, rotDelta);
 
     camera.update();
     let position = camera.getPosition();
@@ -578,8 +560,8 @@ function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    activeShader.setTime(frameCount);
-    activeShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
+    branchShader.setTime(frameCount);
+    branchShader.setEyePosition(vec4.fromValues(position[0], position[1], position[2], 1));
 
     terrainShader.setTime(frameCount);
     terrainShader.setLightPosition(lightDirection);
@@ -595,12 +577,12 @@ function main() {
 
     if (!drawOnlyCollisions) {
 
-      activeShader.setLightPosition(lightDirection);
+      branchShader.setLightPosition(lightDirection);
 
       let chunks = branchInstanced.getNumChunks();
       for (let ctr = 0; ctr < chunks; ++ctr) {
-        activeShader.setInstanceModelMatrices(branchInstanced.getChunkedInstanceModelMatrices(ctr));
-        renderer.render(camera, activeShader, [branchInstanced]);
+        branchShader.setInstanceModelMatrices(branchInstanced.getChunkedInstanceModelMatrices(ctr));
+        renderer.render(camera, branchShader, [branchInstanced]);
       }
 
       if (drawLeaves) {

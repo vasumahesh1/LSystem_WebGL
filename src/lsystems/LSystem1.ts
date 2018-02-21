@@ -15,11 +15,6 @@ var Logger = require('debug');
 var systemTrace = Logger("lsystem:info:instance:transform");
 var systemError = Logger("lsystem:error:instance:transform");
 
-let branch1BoundingBox = [
-  vec4.fromValues(-0.3, 0.2, -0.3, 1),
-  vec4.fromValues(0.3, 0.8, 0.3, 1)
-];
-
 var distance = function(a: any, b: any){
   return Math.pow(a.coordinates[0] - b.coordinates[0], 2) +  Math.pow(a.coordinates[1] - b.coordinates[1], 2) + Math.pow(a.coordinates[2] - b.coordinates[2], 2);
 }
@@ -213,7 +208,7 @@ function drawBranchLarge() {
         continue;
       }
 
-      let result = segmentSegmentIntersect([val.p0, val.p1], [currentData.p0, currentData.p1]) < 0.015;
+      let result = segmentSegmentIntersect([val.p0, val.p1], [currentData.p0, currentData.p1]) < this.scope.constraints.minCollisionDistance;
 
       if (result) {
         this.scope.collisionCount++;
@@ -384,76 +379,6 @@ function drawBranchLeaf2() {
   meshInstance.addInstanceUsingTransform(instModel);
 }
 
-
-function drawFlower() {
-  if (this.depth < 3) {
-    return;
-  }
-
-  let meshInstance = this.scope.instanceMap["flowerLeaf"];
-
-  let transform = mat4.create();
-  let transformX = mat4.create();
-  let transformZ = mat4.create();
-
-  let instModel = mat4.create();
-  let offset = mat4.create();
-  let meshScale = mat4.create();
-
-  let baseScale = 0.2;
-
-  // mat4.fromZRotation(transformZ, degreeToRad(75));
-  mat4.fromScaling(meshScale, vec3.fromValues(baseScale, baseScale, baseScale));
-
-  // mat4.multiply(transform, transform, transformZ);
-  mat4.multiply(transform, transform, meshScale);
-  mat4.multiply(instModel, this.turtle.transform, transform);
-
-  let localOrigin = vec4.fromValues(0.0, 0.0, 0.0, 1);
-  let localMidPoint = vec4.fromValues(0.0, -1.0, 0.0, 1);
-  let worldOrigin = vec4.create();
-  let worldMidPoint = vec4.create();
-  let worldHead = vec4.create();
-  let worldHeadVec3 = vec3.create();
-  vec4.transformMat4(worldOrigin, vec4.fromValues(0.0, 0.0, 0.0, 1), instModel);
-  vec4.transformMat4(worldMidPoint, localMidPoint, instModel);
-
-  vec4.sub(worldHead, worldMidPoint, worldOrigin);
-  worldHeadVec3 = vec3.fromValues(worldHead[0], worldHead[1], worldHead[2]);
-  vec3.normalize(worldHeadVec3, worldHeadVec3);
-
-  let xzVec = vec3.fromValues(1,0,1);
-  vec3.normalize(xzVec, xzVec);
-
-  // let angle = degreeToRad(45);
-
-  let angle = Math.acos(vec3.dot(worldHeadVec3, xzVec));
-
-  // let draw = false;
-
-  if (Math.abs(angle) > degreeToRad(120)) {
-    angle = Math.PI - angle;
-    // draw = true;
-  }
-
-  // if (!draw) return;
-
-  mat4.fromZRotation(transformZ, angle);
-  mat4.multiply(instModel, instModel, transformZ);
-
-
-  if (worldOrigin[1] < 1.0) {
-    return;
-  }
-
-  let val = worldOrigin[1] / 5.0;
-  if (val > 1.0) {
-    val = 1.0;
-  }
-
-  meshInstance.addInstanceUsingTransform(instModel);
-}
-
 function natureTick() {
   let worldMid = vec4.create();
   let worldOrigin = vec4.create();
@@ -496,40 +421,40 @@ function natureTick() {
 function rotateTurtleCW() {
   let noise = this.noiseGen.perlin3(this.turtle.position[0], this.turtle.position[1], this.turtle.position[2]);
 
-  let angleDetla = 5.0 * (noise - 0.5) * 2.0;
+  let angleDetla = this.scope.constraints.rotateSNoise * (noise - 0.5) * 2.0;
 
   let transform = mat4.create();
-  mat4.fromYRotation(transform, degreeToRad(-45 + angleDetla));
+  mat4.fromYRotation(transform, degreeToRad(-this.scope.constraints.rotateSwirl + angleDetla));
   this.turtle.applyTransform(transform);
 }
 
 function rotateTurtleCCW() {
   let noise = this.noiseGen.perlin3(this.turtle.position[0], this.turtle.position[1], this.turtle.position[2]);
 
-  let angleDetla = 5.0 * (noise - 0.5) * 2.0;
+  let angleDetla = this.scope.constraints.rotateSNoise * (noise - 0.5) * 2.0;
 
   let transform = mat4.create();
-  mat4.fromYRotation(transform, degreeToRad(45 + angleDetla));
+  mat4.fromYRotation(transform, degreeToRad(this.scope.constraints.rotateSwirl + angleDetla));
   this.turtle.applyTransform(transform);
 }
 
 function rotateTiltCW() {
   let noise = this.noiseGen.perlin3(this.turtle.position[0], this.turtle.position[1], this.turtle.position[2]);
 
-  let angleDetla = 5.0 * (noise - 0.5) * 2.0;
+  let angleDetla = this.scope.constraints.rotateTNoise * (noise - 0.5) * 2.0;
 
   let transform = mat4.create();
-  mat4.fromZRotation(transform, degreeToRad(-20 + angleDetla));
+  mat4.fromZRotation(transform, degreeToRad(-this.scope.constraints.rotateTilt + angleDetla));
   this.turtle.applyTransform(transform);
 }
 
 function rotateTiltCCW() {
   let noise = this.noiseGen.perlin3(this.turtle.position[0], this.turtle.position[1], this.turtle.position[2]);
 
-  let angleDetla = 5.0 * (noise - 0.5) * 2.0;
+  let angleDetla = this.scope.constraints.rotateTNoise * (noise - 0.5) * 2.0;
 
   let transform = mat4.create();
-  mat4.fromZRotation(transform, degreeToRad(20 + angleDetla));
+  mat4.fromZRotation(transform, degreeToRad(this.scope.constraints.rotateTilt + angleDetla));
   this.turtle.applyTransform(transform);
 }
 
@@ -539,27 +464,17 @@ class LSystem1 {
   instanceMap: { [instance: string]: MeshInstanced; } = { };
 
   constructor(seed: number) {
+    boundingBoxes = [];
+    objectsTree = new kdTree([], distance);
+    leavesTree = new kdTree([], distance);
+
     this.system = new LSystem(seed);
     this.system.setAxiom("[F][/-F][*+F][++*F][--*F]");
-    // this.system.addRule("F", "F");
-    // this.system.addRule("F", "F[/F]F[*F]F");
-    // this.system.addRule("F", "F[/F]F[*F]F");
-    
+
     this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS][*bBFS]", 5);
     this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS]", 7);
     this.system.addWeightedRule("F", "BS++[/BFS][*BFS]", 4);
-    // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
-    // this.system.addWeightedRule("F", "FBS--[/BF1S][*BF1S]", 0.4);
-    // this.system.addWeightedRule("F", "BS", 0.2);
     this.system.addWeightedRule("B", "SD[l+++l+++l]SDO", 0.2);
-
-    // this.system.addWeightedRule("O", "_", 0.8);
-    // this.system.addWeightedRule("B", "DD", 0.8);
-    // this.system.addWeightedRule("F", "--FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.8);
-    // this.system.addWeightedRule("F", "++FSFS[/-FS++FS++F1S][*+FS-FS-FS]", 0.4);
-    
-    // this.system.addRule("X", "F-[[X]+X]+F[+FX]-X");
-    // this.system.addRule("F", "FF");
 
     this.system.addSymbol("l", drawBranchLeaf2, []);
     this.system.addSymbol("b", drawBranchLeaf2, []);
@@ -572,13 +487,7 @@ class LSystem1 {
 
     this.scope = {
       instanceMap: this.instanceMap,
-      collisionCount: 0,
-
-      influencers: {
-        sunlight: 0.0,
-        gravity: 5.0,
-        collisionCheck: true
-      }
+      collisionCount: 0
     };
   }
 
