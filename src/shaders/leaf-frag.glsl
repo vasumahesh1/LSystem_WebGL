@@ -51,14 +51,14 @@ void main() {
 
   float specularTerm = 0.0;
 
-  if (diffuseTerm > 0.0) {
-    /*----------  Blinn Phong  ----------*/
-    vec4 viewVec = u_Eye - fs_Pos;
-    vec4 lightVec = vec4(u_LightPos, 0) - fs_Pos;
+  // if (diffuseTerm > 0.0) {
+  //   /*----------  Blinn Phong  ----------*/
+  //   vec4 viewVec = u_Eye - fs_Pos;
+  //   vec4 lightVec = vec4(u_LightPos, 0) - fs_Pos;
 
-    vec4 H = normalize((viewVec + lightVec) / 2.0f);
-    specularTerm = max(pow(dot(H, normalize(fs_Nor)), 128.0), 0.0);
-  }
+  //   vec4 H = normalize((viewVec + lightVec) / 2.0f);
+  //   specularTerm = max(pow(dot(H, normalize(fs_Nor)), 128.0), 0.0);
+  // }
 
   // float lightIntensity =
   //     ambientTerm + (diffuseTerm + specularTerm);
@@ -68,7 +68,7 @@ void main() {
   // finalColor.y = clamp(finalColor.y, 0.0, 1.0);
   // finalColor.z = clamp(finalColor.z, 0.0, 1.0);
 
-  vec3 fragColor = lightColor * mask * (ambientTerm + (diffuseTerm *diffuseColor.rgb));
+  vec3 fragColor = lightColor * mask * (ambientTerm + diffuseTerm) * diffuseColor.rgb;
 
   float whiteBalance = 9.2;
   float exposure = 10.0;

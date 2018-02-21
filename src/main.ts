@@ -460,7 +460,7 @@ function main() {
 
   // Initial call to load scene
 
-  const camera = new Camera(vec3.fromValues(10, 10, 10), vec3.fromValues(0, 0, 0));
+  const camera = new Camera(vec3.fromValues(8, 8, -8), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.05, 0.05, 0.05, 1);
