@@ -106,7 +106,7 @@ I used a KD Tree from [NPM](https://www.npmjs.com/package/k-d-tree). There was a
 
 You can play with the minDistance control variable and increase it to see how fewer branches are rendered as you increase. There is a toggle to make the branches into white lines and to turn off leaves rendering, So you can toggle between 3D branches and 3D lines.
 
-You can also turn off collision checking altogether and see the effect. I have a few images listed below:
+You can also turn off collision checking altogether and see the effect. I have a few images listed below.
 
 Same Camera, Same Productions, Only the Collision is Toggled. Note: It may seem to you that they collide but they don't *generally* (More on this later).
 
@@ -118,9 +118,7 @@ Same Camera, Same Productions, Only the Collision is Toggled. Note: It may seem 
 Collision Checking is accurate but not fully accurate. Because:
 
 - I treat branches as lines, depending on collision distance, branches can touch each other. But won't cross.
-- There is a start offset and an end offset for each Branch (hence the dotted view) if a branch come in between that it may fail. But we can always lower the offset. Currently a branch line starts from 0.05 till 0.95 (if the length is 1). So, there is a gap of 0.1 there.
-
-So far I couldn't find any collisions despite knowning that there is a loop hole, I couldnt find one.
+- There is a start offset and an end offset for each Branch (hence the dotted view) if a branch comes in between that gap, it may fail. But we can always lower the offset. Currently a branch line starts from 0.05 till 0.95 (if the length is 1). So, there is a gap of 0.1 there.
 
 Branch collisions can also be used artistically, we can set the min distance for collisions really high and get sparsely separated branches.
 
