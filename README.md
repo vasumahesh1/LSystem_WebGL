@@ -126,7 +126,7 @@ Branch collisions can also be used artistically, we can set the min distance for
 
 ### Notes
 
-If you have the error "max uniforms exceeded". Thats because I am instancing the branches and leaves and using the uniform mat4 array as an array of model matrices and using glInstanceID. If you encounter this error, then just change the MAX Uniforms in the `leaf` and `custom` shader files to something lower than 200. Also, you ll need to change the `CHUNK_SIZE` variable in `MeshInstanced.ts` so that it draws X (new number) chunks per draw call.
+If you have the error "max uniforms exceeded". Thats because I am instancing the branches and leaves and using the uniform mat4 array as an array of model matrices and using glInstanceID. If you encounter this error, then just change the MAX Uniforms in the `leaf` and `custom` shader files to something lower than 200. Also, you ll need to change the `CHUNK_SIZE` variable in `MeshInstanced.ts` so that it draws X (new number) per chunk per draw call.
 
 ### References & Libraries
 
