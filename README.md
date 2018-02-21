@@ -108,7 +108,7 @@ You can play with the minDistance control variable and increase it to see how fe
 
 You can also turn off collision checking altogether and see the effect. I have a few images listed below.
 
-Same Camera, Same Productions, Only the Collision is Toggled. Note: It may seem to you that they collide but they don't *generally* (More on this later).
+Same Camera, Same Productions, Only the Collision is Toggled. Note: It may seem to you that they collide but might be cause the image is 2D and branches are dark brown. Also, they *generally* don't collide (more below).
 
 | Collision Check ON | Collision Check OFF |
 | ---- | ---- |
