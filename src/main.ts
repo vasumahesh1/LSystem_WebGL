@@ -132,10 +132,10 @@ function loadAssets() {
   boundingLines = new Line();
 
   // Enable for Debug
-  boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
-  boundingLines.linesArray.push(vec4.fromValues(30, 0, 0, 1.0));
-  boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
-  boundingLines.linesArray.push(vec4.fromValues(0, 0, 30, 1.0));
+  // boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
+  // boundingLines.linesArray.push(vec4.fromValues(30, 0, 0, 1.0));
+  // boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
+  // boundingLines.linesArray.push(vec4.fromValues(0, 0, 30, 1.0));
 
   branchInstanced = new MeshInstanced("Branch Mesh");
   leafInstances = new Array<MeshInstanced>();
