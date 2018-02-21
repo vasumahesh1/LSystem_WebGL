@@ -5169,9 +5169,6 @@ const LEAF_COLOR_GRADIENT = [
 ];
 let prevTime;
 let degreePerMS = -5.0 / 1000.0;
-let icosphere;
-let square;
-let cube;
 let boundingLines;
 let branchInstanced;
 let flowerLeafInstance;
@@ -5219,10 +5216,10 @@ function loadAssets() {
     plane.create();
     boundingLines = new __WEBPACK_IMPORTED_MODULE_3__geometry_Line__["a" /* default */]();
     // Enable for Debug
-    boundingLines.linesArray.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(0, 0, 0, 1.0));
-    boundingLines.linesArray.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(30, 0, 0, 1.0));
-    boundingLines.linesArray.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(0, 0, 0, 1.0));
-    boundingLines.linesArray.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(0, 0, 30, 1.0));
+    // boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
+    // boundingLines.linesArray.push(vec4.fromValues(30, 0, 0, 1.0));
+    // boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
+    // boundingLines.linesArray.push(vec4.fromValues(0, 0, 30, 1.0));
     branchInstanced = new __WEBPACK_IMPORTED_MODULE_5__geometry_MeshInstanced__["a" /* default */]("Branch Mesh");
     leafInstances = new Array();
     let leafLoadPromises = [];

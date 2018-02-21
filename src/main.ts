@@ -65,9 +65,6 @@ const LEAF_COLOR_GRADIENT: Array<any> = [
 let prevTime: number;
 let degreePerMS: number = -5.0 / 1000.0;
 
-let icosphere: Icosphere;
-let square: Square;
-let cube: Cube;
 let boundingLines: Line;
 let branchInstanced: MeshInstanced;
 let flowerLeafInstance: MeshInstanced;
