@@ -30,8 +30,6 @@ var leavesTree = new kdTree([], distance);
 //   coordinates: [0, 0, 0]
 // }
 
-
-
 function degreeToRad(deg: number) {
   return deg * 0.0174533;
 }
@@ -47,41 +45,41 @@ function segmentSegmentIntersect(S1: any, S2: any)
     let w = vec3.create();
     vec3.sub(w, S1[0], S2[0]);
 
-    let a = vec3.dot(u,u);         // always >= 0
+    let a = vec3.dot(u,u);         
     let b = vec3.dot(u,v);
-    let c = vec3.dot(v,v);         // always >= 0
+    let c = vec3.dot(v,v);         
     let d = vec3.dot(u,w);
     let e = vec3.dot(v,w);
 
-    let D = a * c - b * b;        // always >= 0
-    let sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
-    let tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
+    let D = a * c - b * b;        
+    let sc, sN, sD = D;       
+    let tc, tN, tD = D;       
 
 
-    if (D < 0.0001) { // the lines are almost parallel
-        sN = 0.0;         // force using point P0 on segment S1
-        sD = 1.0;         // to prevent possible division by 0.0 later
+    if (D < 0.0001) { 
+        sN = 0.0;         
+        sD = 1.0;         
         tN = e;
         tD = c;
     }
-    else {                 // get the closest points on the infinite lines
+    else {                 
         sN = (b * e - c * d);
         tN = (a * e - b * d);
-        if (sN < 0.0) {        // sc < 0 => the s=0 edge is visible
+        if (sN < 0.0) {        
             sN = 0.0;
             tN = e;
             tD = c;
         }
-        else if (sN > sD) {  // sc > 1  => the s=1 edge is visible
+        else if (sN > sD) {  
             sN = sD;
             tN = e + b;
             tD = c;
         }
     }
 
-    if (tN < 0.0) {            // tc < 0 => the t=0 edge is visible
+    if (tN < 0.0) {            
         tN = 0.0;
-        // recompute sc for this edge
+        
         if (-d < 0.0)
             sN = 0.0;
         else if (-d > a)
@@ -91,9 +89,9 @@ function segmentSegmentIntersect(S1: any, S2: any)
             sD = a;
         }
     }
-    else if (tN > tD) {      // tc > 1  => the t=1 edge is visible
+    else if (tN > tD) {      
         tN = tD;
-        // recompute sc for this edge
+        
         if ((-d + b) < 0.0)
             sN = 0;
         else if ((-d + b) > a)
@@ -103,13 +101,11 @@ function segmentSegmentIntersect(S1: any, S2: any)
             sD = a;
         }
     }
-    // finally do the division to get sc and tc
+
     sc = (Math.abs(sN) < 0.00001 ? 0.0 : sN / sD);
     tc = (Math.abs(tN) < 0.00001 ? 0.0 : tN / tD);
 
     // get the difference of the two closest points
-    // Vector   dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
-
     let u1 = vec3.create();
     vec3.scale(u1, u, sc);
     let v1 = vec3.create();
@@ -119,8 +115,7 @@ function segmentSegmentIntersect(S1: any, S2: any)
     vec3.add(dP, w, u1);
     vec3.sub(dP, dP, v1);
 
-
-    return vec3.length(dP);   // return the closest distance
+    return vec3.length(dP);
 }
 
 function makeBoundingLine(p0: vec3, p1: vec3, mesh: any) {
@@ -128,7 +123,7 @@ function makeBoundingLine(p0: vec3, p1: vec3, mesh: any) {
   mesh.linesArray.push(vec4.fromValues(p1[0], p1[1], p1[2], 1.0));
 }
 
-function drawBranchLarge() {
+function drawBranchSegment() {
   let transform = mat4.create();
   let meshInstance = this.scope.instanceMap["branch"];
   let turtlePos = this.turtle.position;
@@ -246,7 +241,7 @@ function drawBranchLarge() {
   this.turtle.applyTransform(transform);
 }
 
-function drawBranchLeaf2() {
+function drawBranchLeaf() {
   if (this.depth < 3) {
     return;
   }
@@ -261,10 +256,7 @@ function drawBranchLeaf2() {
 
   let baseScale = 0.2;
 
-  // mat4.fromZRotation(transformZ, degreeToRad(75));
   mat4.fromScaling(meshScale, vec3.fromValues(baseScale, baseScale, baseScale));
-
-  // mat4.multiply(transform, transform, transformZ);
   mat4.multiply(transform, transform, meshScale);
   mat4.multiply(instModel, this.turtle.transform, transform);
 
@@ -284,18 +276,11 @@ function drawBranchLeaf2() {
   let xzVec = vec3.fromValues(1,0,1);
   vec3.normalize(xzVec, xzVec);
 
-  // let angle = degreeToRad(45);
-
   let angle = Math.acos(vec3.dot(worldHeadVec3, xzVec));
-
-  // let draw = false;
 
   if (Math.abs(angle) > degreeToRad(120)) {
     angle = Math.PI - angle;
-    // draw = true;
   }
-
-  // if (!draw) return;
 
   mat4.fromZRotation(transformZ, angle);
   mat4.multiply(instModel, instModel, transformZ);
@@ -309,23 +294,6 @@ function drawBranchLeaf2() {
   if (val > 1.0) {
     val = 1.0;
   }
-
-  // if (this.scope.influencers.collisionCheck) {
-  //   var nearest = leavesTree.nearest({
-  //     coordinates: [worldMidPoint[0], worldMidPoint[1], worldMidPoint[3]]
-  //   }, 20);
-
-  //   for (var j = 0; j < nearest.length; ++j) {
-  //     let obj = nearest[j][0];
-  //     let coords = obj.coordinates;
-
-  //     let dist = distance({coordinates: worldMidPoint}, obj);
-
-  //     if (dist < 1) {
-  //       return;
-  //     }
-  //   }
-  // }
 
   let leafInstances = this.scope.leafInstances;
 
@@ -471,14 +439,13 @@ class LSystem1 {
     this.system = new LSystem(seed);
     this.system.setAxiom("[F][/-F][*+F][++*F][--*F]");
 
-    this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS][*bBFS]", 5);
-    this.system.addWeightedRule("F", "BS++[/bBFS][*BFS]++[/BFS]", 7);
+    this.system.addWeightedRule("F", "BS++[/lBFS][*BFS]++[/BFS][*lBFS]", 5);
+    this.system.addWeightedRule("F", "BS++[/lBFS][*BFS]++[/BFS]", 7);
     this.system.addWeightedRule("F", "BS++[/BFS][*BFS]", 4);
-    this.system.addWeightedRule("B", "SD[l+++l+++l]SDO", 0.2);
+    this.system.addRule("B", "SD[l+++l+++l]SD");
 
-    this.system.addSymbol("l", drawBranchLeaf2, []);
-    this.system.addSymbol("b", drawBranchLeaf2, []);
-    this.system.addSymbol("D", drawBranchLarge, []);
+    this.system.addSymbol("l", drawBranchLeaf, []);
+    this.system.addSymbol("D", drawBranchSegment, []);
     this.system.addSymbol("S", natureTick, []);
     this.system.addSymbol("-", rotateTurtleCCW, []);
     this.system.addSymbol("+", rotateTurtleCW, []);

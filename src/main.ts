@@ -131,6 +131,7 @@ function loadAssets() {
 
   boundingLines = new Line();
 
+  // Enable for Debug
   boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
   boundingLines.linesArray.push(vec4.fromValues(30, 0, 0, 1.0));
   boundingLines.linesArray.push(vec4.fromValues(0, 0, 0, 1.0));
@@ -223,7 +224,7 @@ function constructGUI() {
 
   let group = gui.addFolder('Environment Influencers');
   group.add(controls.influencers, 'gravity', 0, 30).step(1.0).name('Gravity Factor').listen();
-  group.add(controls.influencers, 'sunlight', 0, 1).step(0.1).name('Sunlight Bend Factor').listen();
+  group.add(controls.influencers, 'sunlight', 0, 2).step(0.1).name('Sunlight Bend Factor').listen();
   group.add(controls.lightDirection, '0', -20, 20).step(1.0).name('Light X').listen();
   group.add(controls.lightDirection, '1', -20, 20).step(1.0).name('Light Y').listen();
   group.add(controls.lightDirection, '2', -20, 20).step(1.0).name('Light Z').listen();
