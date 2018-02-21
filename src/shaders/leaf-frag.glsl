@@ -68,7 +68,7 @@ void main() {
   // finalColor.y = clamp(finalColor.y, 0.0, 1.0);
   // finalColor.z = clamp(finalColor.z, 0.0, 1.0);
 
-  vec3 fragColor = lightColor * mask * (ambientTerm + diffuseTerm) * diffuseColor.rgb;
+  vec3 fragColor = lightColor * mask * (ambientTerm + diffuseTerm * diffuseColor.rgb);
 
   float whiteBalance = 9.2;
   float exposure = 10.0;
