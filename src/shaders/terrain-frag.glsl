@@ -20,6 +20,20 @@ in float fs_useMatcap;
 
 out vec4 out_Col;
 
+// Uncharted 2 Tonemapping made by John Hable, filmicworlds.com
+vec3 uc2Tonemap(vec3 x)
+{
+   return ((x*(0.15*x+0.1*0.5)+0.2*0.02)/(x*(0.15*x+0.5)+0.2*0.3))-0.02/0.3;
+}
+
+vec3 tonemap(vec3 x, float exposure, float invGamma, float whiteBalance) {
+    vec3 white = vec3(whiteBalance);
+    vec3 color = uc2Tonemap(exposure * x);
+    vec3 whitemap = 1.0 / uc2Tonemap(white);
+    color *= whitemap;
+    return pow(color, vec3(invGamma));
+}
+
 void main() {
 
   float bias = 0.005;
@@ -32,7 +46,7 @@ void main() {
   //     fragmentVisibility = 0.0;
   // }
 
-  vec4 diffuseColor = vec4(0.29, 0.207, 0.141, 1.0);
+  vec4 diffuseColor = vec4(242, 226, 207, 255.0) / 255.0;
   float alpha = diffuseColor.a;
   vec3 lightColor = vec3(1.84,1.27,0.99);
 
@@ -45,16 +59,21 @@ void main() {
 
   float attn = 1.0;
 
-  float s = 32.0;
+  float s = 128.0;
   float kSpot = pow(max(dot(normalize(vec3(-fs_LightVec)), normalize(-u_LightPos)), 0.0), s);
 
-  float lightIntensity = kSpot * (ambientTerm + (diffuseTerm / attn));
+  // float lightIntensity = kSpot * (ambientTerm + (diffuseTerm / attn));
+  // vec4 finalColor = vec4(diffuseColor.rgb * lightColor * mask.rgb * lightIntensity * fragmentVisibility, alpha);
 
+  vec3 fragColor = lightColor * kSpot * mask * (ambientTerm + (diffuseTerm * diffuseColor.rgb));
 
-  vec4 finalColor = vec4(diffuseColor.rgb * lightColor * mask.rgb * lightIntensity * fragmentVisibility, alpha);
-  finalColor.x = clamp(finalColor.x, 0.0, 1.0);
-  finalColor.y = clamp(finalColor.y, 0.0, 1.0);
-  finalColor.z = clamp(finalColor.z, 0.0, 1.0);
+  float whiteBalance = 9.2;
+  float exposure = 10.0;
+  float invGamma = 1.0 / 0.4;
+
+  fragColor = tonemap(fragColor , exposure, invGamma, whiteBalance);
+
+  vec4 finalColor = vec4(fragColor, alpha);
 
   out_Col = finalColor;
 }
