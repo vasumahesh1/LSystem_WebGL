@@ -4456,7 +4456,6 @@ class LSystemExecutionScope {
     constructor() {
         this.itr = 0;
         this.depth = 1;
-        this.rootString = "";
         this.stack = new __WEBPACK_IMPORTED_MODULE_1__ds_Stack__["a" /* default */]();
         this.turtle = new LSystemTurtle();
     }
@@ -4531,7 +4530,10 @@ class LSystem {
         }, []);
     }
     setAxiom(value) {
-        this.axiom = value;
+        this.rootString = new Array();
+        for (let i = 0; i < value.length; ++i) {
+            this.rootString.push(value[i]);
+        }
         return this;
     }
     addSymbol(value, drawCmd, args) {
@@ -4572,20 +4574,21 @@ class LSystem {
         return ruleSet.rules[ruleIdx];
     }
     construct(iterations) {
-        let current = this.axiom;
+        let current = this.rootString;
         for (let itr = iterations - 1; itr >= 0; --itr) {
-            let nextString = "";
             for (let stringItr = 0; stringItr < current.length; ++stringItr) {
                 let symbol = current[stringItr];
                 let symbolRuleSet = this.rules[symbol];
                 if (!symbolRuleSet) {
-                    nextString += symbol;
                     continue;
                 }
+                current.splice(stringItr, 1);
                 let rule = this.selectRule(symbolRuleSet, stringItr, itr);
-                nextString += rule.expr;
+                for (let i = 0; i < rule.expr.length; ++i) {
+                    current.splice(stringItr + i, 0, rule.expr[i]);
+                }
+                stringItr += rule.expr.length - 1;
             }
-            current = nextString;
         }
         this.maxDepth = 0;
         let possibleDepth = 0;
@@ -4604,11 +4607,10 @@ class LSystem {
         this.maxDepth = possibleDepth;
         dConstruct("Resultant String: " + current);
         dConstruct("Resultant Max Depth: ", this.maxDepth);
-        this.construction = current;
         return this;
     }
     process(scope) {
-        let rootString = this.construction;
+        let rootString = this.rootString;
         this.execScope = new LSystemExecutionScope();
         this.execScope.scope = scope;
         this.execScope.rootString = rootString;
@@ -18931,6 +18933,9 @@ class LSystem1 {
         objectsTree = new kdTree([], distance);
         leavesTree = new kdTree([], distance);
         this.system = new __WEBPACK_IMPORTED_MODULE_0__core_lsystem_LSystem__["a" /* LSystem */](seed);
+        // For Debug:
+        // this.system.setAxiom("X");
+        // this.system.addWeightedRule("X", "LLRRX", 5);
         this.system.setAxiom("[F][/-F][*+F][++*F][--*F]");
         this.system.addWeightedRule("F", "BS++[/lBFS][*BFS]++[/BFS][*lBFS]", 5);
         this.system.addWeightedRule("F", "BS++[/lBFS][*BFS]++[/BFS]", 7);
