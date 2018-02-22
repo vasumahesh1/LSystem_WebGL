@@ -38,6 +38,8 @@ function drawBranchSegment(instanceMap, depth, turtle, maxDepth, itr, rootString
 
 - **OpenGL Instancing** - First time implementing instancing. Now, I can run around 2000 leaves and 1500 branches on my mac and still get ~50fps. I guess the number can be bigger for other systems.
 
+- **JS Arrays** - I used JS Arrays instead of LinkedList and Strings. (As per the spec sheet).
+
 - Shadow Mapping, Tonemap
 
 In the code you can see an `LSystem1.ts -> LSystem.ts` inheritance. The base class is the one that provides the traversing and generic functions, the LSystem1 (bad name I know!) Does all the drawing.
