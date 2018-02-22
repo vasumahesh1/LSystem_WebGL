@@ -6,7 +6,7 @@
 
 I went with a more plant-like approach rather than a tree. I have a couple of interesting features built into this system. Overall I have a base LSystem that actually abstracts a lot of the details from the LSystem Instance Class that I use to create my tree.
 
-Some of the features include (overall), some will be pretty obvious:
+Some of the features include, some will be pretty obvious:
 
 - **Weighted Rules in a combined RuleSet**
 
@@ -43,6 +43,8 @@ function drawBranchSegment(instanceMap, depth, turtle, maxDepth, itr, rootString
 - Shadow Mapping, Tonemap
 
 In the code you can see an `LSystem1.ts -> LSystem.ts` inheritance. The base class is the one that provides the traversing and generic functions, the LSystem1 (bad name I know!) Does all the drawing.
+
+**Also just a note, the bottleneck if you increase iterations is the Execution of each LSystem command. I would recommend you not going over 5 iterations as it may take a lot of time to generate the VBOs.**
 
 
 ### LSystem Components
