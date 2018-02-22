@@ -437,6 +437,11 @@ class LSystem1 {
     leavesTree = new kdTree([], distance);
 
     this.system = new LSystem(seed);
+
+    // For Debug:
+    // this.system.setAxiom("X");
+    // this.system.addWeightedRule("X", "LLRRX", 5);
+
     this.system.setAxiom("[F][/-F][*+F][++*F][--*F]");
 
     this.system.addWeightedRule("F", "BS++[/lBFS][*BFS]++[/BFS][*lBFS]", 5);

@@ -89,14 +89,13 @@ class LSystemExecutionScope {
   itr: number;
   depth: number;
   maxDepth: number;
-  rootString: string;
+  rootString: Array<string>;
   stack: Stack<LSystemStackEntry>;
   turtle: LSystemTurtle;
 
   constructor() {
     this.itr = 0;
     this.depth = 1;
-    this.rootString = "";
     this.stack = new Stack<LSystemStackEntry>();
     this.turtle = new LSystemTurtle();
   }
@@ -176,12 +175,11 @@ class LSystemTurtle {
 class LSystem {
   rules: { [symbol: string]: LSystemRuleSet; } = { };
   map: { [symbol: string]: LSystemSymbol; } = { };
-  axiom: string;
-  construction: string;
   execScope: LSystemExecutionScope;
   seed: number;
   maxDepth: number;
   noiseGen: any;
+  rootString: Array<string>;
 
   constructor(seed: number) {
     this.seed = seed;
@@ -201,7 +199,11 @@ class LSystem {
   }
 
   setAxiom(value: string) {
-    this.axiom = value;
+    this.rootString = new Array<string>();
+    for(let i = 0; i < value.length; ++i) {
+      this.rootString.push(value[i]);
+    }
+
     return this;
   }
 
@@ -257,11 +259,9 @@ class LSystem {
   }
 
   construct(iterations: number) {
-    let current = this.axiom;
+    let current = this.rootString;
 
     for (let itr = iterations - 1; itr >= 0; --itr) {
-
-      let nextString = "";
 
       for (let stringItr = 0; stringItr < current.length; ++stringItr) {
 
@@ -269,15 +269,19 @@ class LSystem {
         let symbolRuleSet = this.rules[symbol];
 
         if (!symbolRuleSet) {
-          nextString +=  symbol;
           continue;
         }
 
-        let rule = this.selectRule(symbolRuleSet, stringItr, itr);
-        nextString +=  rule.expr;
-      }
+        current.splice(stringItr, 1);
 
-      current = nextString;
+        let rule = this.selectRule(symbolRuleSet, stringItr, itr);
+
+        for(let i = 0; i < rule.expr.length; ++i) {
+          current.splice(stringItr + i, 0, rule.expr[i]);
+        }
+
+        stringItr += rule.expr.length - 1;
+      }
     }
 
     this.maxDepth = 0;
@@ -301,12 +305,11 @@ class LSystem {
     dConstruct("Resultant String: " + current);
     dConstruct("Resultant Max Depth: ", this.maxDepth);
 
-    this.construction = current;
     return this;
   }
 
   process(scope: any) {
-    let rootString = this.construction;
+    let rootString = this.rootString;
 
     this.execScope = new LSystemExecutionScope();
     this.execScope.scope = scope;
